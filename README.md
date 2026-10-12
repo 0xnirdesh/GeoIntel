@@ -3,17 +3,10 @@
 **DBMS Project** | PostgreSQL 17 + PostGIS 3.6
 
 ## Developed By
-Nirdesh Kumar | 2402221530085 | AIML B
-
-## Developed In
-AI Lab
-
-## Under the Supervision of
-Ms. Anjali Srivastava
-Assistant Professor, Department of CSE
+Nirdesh Kumar | 2402221530085 | AIML 
 
 ## Academic Year
-2025–2026
+2026–2027
 
 ## Status
 - [x] Day 1: Setup + Schema
