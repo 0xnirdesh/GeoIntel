@@ -10,7 +10,7 @@ Nirdesh Kumar | 2402221530085 | AIML
 
 ## Status
 - [x] Day 1: Setup + Schema
-- [ ] Day 2-7: Data import
+- [x] Day 2-7: Data import
 - [ ] Day 8-14: Queries + Functions + Triggers
 - [ ] Day 15-21: Optimization
 - [ ] Day 22-28: Documentation + Viva
