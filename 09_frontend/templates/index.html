@@ -126,8 +126,10 @@
             <p style="color:#888;">Map pe kisi bhi jagah click kar — us jagah ka pura data dikhega.</p>
         </div>
         
-        <div class="section-title">📊 Top Wards by Population</div>
-        <canvas id="wardChart" height="140"></canvas>
+       <div class="section-title">💡 Delhi Snapshot</div>
+<div class="info-panel" id="insights-panel">
+    <p style="color:#888;">Loading insights...</p>
+</div>
     </div>
     
     <div id="map"></div>
@@ -294,29 +296,34 @@
                 });
         });
 
-        // Ward chart
-        fetch('/api/ward_stats').then(r => r.json()).then(data => {
-            const ctx = document.getElementById('wardChart').getContext('2d');
-            new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: data.slice(0, 8).map(w => w.ward_name.substring(0, 9)),
-                    datasets: [{
-                        label: 'Population',
-                        data: data.slice(0, 8).map(w => w.population),
-                        backgroundColor: '#4fc3f7'
-                    }]
-                },
-                options: {
-                    responsive: true, animation: false,
-                    plugins: { legend: { display: false } },
-                    scales: {
-                        x: { ticks: { color: '#888', font: { size: 8 } } },
-                        y: { ticks: { color: '#888', font: { size: 8 } } }
-                    }
-                }
-            });
-        });
+       // Delhi Insights
+fetch('/api/insights').then(r => r.json()).then(d => {
+    let html = '';
+    
+    html += `<div class="info-row"><span class="info-label">🗺️ Total Area</span><span class="info-value">${d.area} km²</span></div>`;
+    
+    const aqiClass = d.avg_aqi < 100 ? 'aqi-good' : d.avg_aqi < 200 ? 'aqi-moderate' : 'aqi-poor';
+    html += `<div class="info-row"><span class="info-label">💨 Avg AQI</span><span class="info-value ${aqiClass}">${d.avg_aqi}</span></div>`;
+    
+    html += `<div class="info-row"><span class="info-label">🌊 High Flood Wards</span><span class="info-value flood-high">${d.flood_wards}</span></div>`;
+    
+    if (d.top_pop) {
+        html += `<div class="info-row"><span class="info-label">👥 Most Populated</span><span class="info-value">${d.top_pop.name.substring(0, 14)}</span></div>`;
+    }
+    
+    if (d.top_hosp) {
+        html += `<div class="info-row"><span class="info-label">🏥 Most Hospitals</span><span class="info-value">${d.top_hosp.name.substring(0, 14)} (${d.top_hosp.cnt})</span></div>`;
+    }
+    
+    html += `<div style="margin-top:10px;padding-top:8px;border-top:1px solid #2a2a4a;">`;
+    html += `<div class="info-label" style="margin-bottom:6px;">🗣️ Top Languages</div>`;
+    d.languages.forEach(l => {
+        html += `<div class="info-row"><span class="info-label">${l.language}</span><span class="info-value">${l.avg_pct}%</span></div>`;
+    });
+    html += `</div>`;
+    
+    document.getElementById('insights-panel').innerHTML = html;
+});
     </script>
 </body>
 </html>
