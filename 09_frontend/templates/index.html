@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>GeoIntel — Delhi Spatial Intelligence</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css"/>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css"/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; display: flex; height: 100vh; }
+        
+        .sidebar { width: 360px; background: #1a1a2e; color: white; overflow-y: auto; padding: 18px; }
+        .sidebar h1 { font-size: 22px; margin-bottom: 6px; color: #4fc3f7; }
+        .subtitle { font-size: 12px; color: #888; margin-bottom: 16px; }
+        
+        .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 16px; }
+        .stat-card {
+            background: #16213e; padding: 10px 12px; border-radius: 8px;
+            border-left: 3px solid #4fc3f7;
+        }
+        .stat-card .label { font-size: 10px; color: #888; text-transform: uppercase; }
+        .stat-card .value { font-size: 18px; font-weight: bold; color: #4fc3f7; }
+        
+        .section-title {
+            font-size: 12px; margin: 16px 0 8px 0; color: #4fc3f7;
+            text-transform: uppercase; letter-spacing: 1px;
+            border-bottom: 1px solid #2a2a4a; padding-bottom: 6px;
+        }
+        
+        #map { flex: 1; }
+        
+        .info-panel {
+            background: #16213e; border-radius: 8px; padding: 12px;
+            font-size: 12px; max-height: 500px; overflow-y: auto;
+        }
+        .info-row { 
+            display: flex; justify-content: space-between; 
+            padding: 5px 0; border-bottom: 1px solid #2a2a4a;
+        }
+        .info-row:last-child { border-bottom: none; }
+        .info-label { color: #888; }
+        .info-value { color: #4fc3f7; font-weight: bold; }
+        
+        .poi-item {
+            padding: 6px 8px; margin-bottom: 4px;
+            background: #1a1a2e; border-radius: 6px;
+            display: flex; justify-content: space-between; gap: 8px;
+            font-size: 11px;
+        }
+        .poi-dist { color: #4fc3f7; font-weight: bold; white-space: nowrap; }
+        
+        .legend { background: #16213e; border-radius: 8px; padding: 10px; font-size: 11px; }
+        .legend-item { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+        .legend-item:last-child { margin-bottom: 0; }
+        
+        .cluster-legend {
+            display: inline-flex; align-items: center; justify-content: center;
+            width: 24px; height: 24px; border-radius: 50%;
+            background: rgba(76, 175, 80, 0.6); color: white;
+            font-size: 10px; font-weight: bold;
+            border: 2px solid rgba(76, 175, 80, 0.9);
+        }
+        
+        .poi-icon {
+            display: flex; align-items: center; justify-content: center;
+            width: 26px; height: 26px; border-radius: 50%;
+            background: white; border: 2px solid;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3); font-size: 13px;
+        }
+        .poi-icon.hospital { border-color: #e74c3c; color: #e74c3c; }
+        .poi-icon.school { border-color: #3498db; color: #3498db; }
+        
+        .flood-high { color: #e74c3c; }
+        .flood-medium { color: #f39c12; }
+        .flood-none { color: #27ae60; }
+        .aqi-good { color: #27ae60; }
+        .aqi-moderate { color: #f39c12; }
+        .aqi-poor { color: #e74c3c; }
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <h1>GeoIntel</h1>
+        <div class="subtitle">Delhi Spatial Intelligence System</div>
+        
+        <div class="stat-grid">
+            <div class="stat-card"><div class="label">Wards</div><div class="value" id="s-wards">-</div></div>
+            <div class="stat-card"><div class="label">Hospitals</div><div class="value" id="s-hosp">-</div></div>
+            <div class="stat-card"><div class="label">Schools</div><div class="value" id="s-schools">-</div></div>
+            <div class="stat-card"><div class="label">Buildings</div><div class="value" id="s-build">-</div></div>
+            <div class="stat-card"><div class="label">Roads</div><div class="value" id="s-roads">-</div></div>
+            <div class="stat-card"><div class="label">POIs</div><div class="value" id="s-pois">-</div></div>
+        </div>
+
+        <div class="section-title">🗺️ Map Legend</div>
+        <div class="legend">
+            <div class="legend-item">
+                <div class="poi-icon hospital"><i class="fa-solid fa-hospital"></i></div>
+                <span>Hospital (single)</span>
+            </div>
+            <div class="legend-item">
+                <div class="poi-icon school"><i class="fa-solid fa-school"></i></div>
+                <span>School (single)</span>
+            </div>
+            <div class="legend-item">
+                <div class="cluster-legend">5</div>
+                <span>Cluster — itne markers ek jagah</span>
+            </div>
+            <div class="legend-item">
+                <div style="width:22px;height:12px;background:#e74c3c;opacity:0.5;border-radius:3px;"></div>
+                <span>High Flood Risk</span>
+            </div>
+            <div class="legend-item">
+                <div style="width:22px;height:12px;background:#f39c12;opacity:0.5;border-radius:3px;"></div>
+                <span>Medium Flood Risk</span>
+            </div>
+        </div>
+        
+        <div class="section-title">📍 Location Info</div>
+        <div class="info-panel" id="info-panel">
+            <p style="color:#888;">Map pe kisi bhi jagah click kar — us jagah ka pura data dikhega.</p>
+        </div>
+        
+        <div class="section-title">📊 Top Wards by Population</div>
+        <canvas id="wardChart" height="140"></canvas>
+    </div>
+    
+    <div id="map"></div>
+
+    <script>
+        const map = L.map('map', {
+            preferCanvas: true,
+            zoomAnimation: false, fadeAnimation: false, markerZoomAnimation: false
+        }).setView([28.6139, 77.2090], 11);
+        
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap', maxZoom: 19
+        }).addTo(map);
+
+        // Cluster groups
+        const hospitalCluster = L.markerClusterGroup({
+            maxClusterRadius: 50, disableClusteringAtZoom: 15,
+            spiderfyOnMaxZoom: false, showCoverageOnHover: false,
+            iconCreateFunction: function(cluster) {
+                const count = cluster.getChildCount();
+                let size = 'small';
+                if (count > 20) size = 'large';
+                else if (count > 5) size = 'medium';
+                return L.divIcon({
+                    html: '<div style="background:rgba(231,76,60,0.7);border:2px solid #e74c3c;border-radius:50%;width:36px;height:36px;display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:13px;">' + count + '</div>',
+                    className: '', iconSize: [36, 36]
+                });
+            }
+        });
+        
+        const schoolCluster = L.markerClusterGroup({
+            maxClusterRadius: 50, disableClusteringAtZoom: 15,
+            spiderfyOnMaxZoom: false, showCoverageOnHover: false,
+            iconCreateFunction: function(cluster) {
+                const count = cluster.getChildCount();
+                return L.divIcon({
+                    html: '<div style="background:rgba(52,152,219,0.7);border:2px solid #3498db;border-radius:50%;width:36px;height:36px;display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:13px;">' + count + '</div>',
+                    className: '', iconSize: [36, 36]
+                });
+            }
+        });
+
+        function makeIcon(type) {
+            return L.divIcon({
+                className: '',
+                html: `<div class="poi-icon ${type}"><i class="fa-solid fa-${type}"></i></div>`,
+                iconSize: [26, 26], iconAnchor: [13, 13], popupAnchor: [0, -13]
+            });
+        }
+        const hospitalIcon = makeIcon('hospital');
+        const schoolIcon = makeIcon('school');
+
+        // Stats
+        fetch('/api/stats').then(r => r.json()).then(d => {
+            document.getElementById('s-wards').textContent = d.wards;
+            document.getElementById('s-hosp').textContent = d.hospitals;
+            document.getElementById('s-schools').textContent = d.schools;
+            document.getElementById('s-build').textContent = parseInt(d.buildings).toLocaleString();
+            document.getElementById('s-roads').textContent = parseInt(d.roads).toLocaleString();
+            document.getElementById('s-pois').textContent = parseInt(d.pois).toLocaleString();
+        });
+
+        // Hospitals
+        fetch('/api/hospitals').then(r => r.json()).then(data => {
+            data.forEach(h => {
+                if (h.lat && h.lon) {
+                    L.marker([h.lat, h.lon], { icon: hospitalIcon })
+                        .bindPopup('<b>🏥 ' + h.name + '</b>')
+                        .addTo(hospitalCluster);
+                }
+            });
+            map.addLayer(hospitalCluster);
+        });
+
+        // Schools
+        fetch('/api/schools').then(r => r.json()).then(data => {
+            data.forEach(s => {
+                if (s.lat && s.lon) {
+                    L.marker([s.lat, s.lon], { icon: schoolIcon })
+                        .bindPopup('<b>🏫 ' + s.name + '</b>')
+                        .addTo(schoolCluster);
+                }
+            });
+            map.addLayer(schoolCluster);
+        });
+
+        // Flood zones
+        fetch('/api/flood_zones').then(r => r.json()).then(data => {
+            const features = data.filter(f => f.geometry).map(f => ({
+                type: 'Feature', properties: { risk: f.risk_level },
+                geometry: JSON.parse(f.geometry)
+            }));
+            if (features.length > 0) {
+                L.geoJSON({ type: 'FeatureCollection', features }, {
+                    style: (f) => ({
+                        color: f.properties.risk === 'High' ? '#e74c3c' : '#f39c12',
+                        weight: 1, fillOpacity: 0.25
+                    }),
+                    renderer: L.canvas()
+                }).bindPopup(l => '⚠️ ' + l.feature.properties.risk + ' Flood Risk').addTo(map);
+            }
+        });
+
+        // SINGLE click marker — previous removed
+        let clickMarker = null;
+        let clickCircle = null;
+
+        map.on('click', function(e) {
+            const lat = e.latlng.lat;
+            const lon = e.latlng.lng;
+            
+            // Remove previous
+            if (clickMarker) map.removeLayer(clickMarker);
+            if (clickCircle) map.removeLayer(clickCircle);
+            
+            clickMarker = L.marker([lat, lon], {
+                icon: L.divIcon({
+                    html: '<div style="background:#4fc3f7;width:16px;height:16px;border-radius:50%;border:3px solid white;box-shadow:0 2px 6px rgba(0,0,0,0.5);"></div>',
+                    iconSize: [16, 16], iconAnchor: [8, 8]
+                })
+            }).addTo(map);
+            
+            clickCircle = L.circle([lat, lon], {
+                radius: 2000, color: '#4fc3f7',
+                fillColor: '#4fc3f7', fillOpacity: 0.08, weight: 1, dashArray: '4,4'
+            }).addTo(map);
+            
+            document.getElementById('info-panel').innerHTML = '<p style="color:#4fc3f7;">Loading...</p>';
+            
+            fetch(`/api/location_info?lat=${lat}&lon=${lon}`)
+                .then(r => r.json())
+                .then(d => {
+                    let html = '';
+                    
+                    // Ward info
+                    if (d.ward) {
+                        html += `<div style="margin-bottom:8px;"><b style="color:#4fc3f7;">📍 ${d.ward.ward_name || 'Unknown Ward'}</b></div>`;
+                        html += `<div class="info-row"><span class="info-label">Population</span><span class="info-value">${d.ward.population ? parseInt(d.ward.population).toLocaleString() : 'N/A'}</span></div>`;
+                        html += `<div class="info-row"><span class="info-label">Literacy</span><span class="info-value">${d.ward.literacy ? d.ward.literacy + '%' : 'N/A'}</span></div>`;
+                        html += `<div class="info-row"><span class="info-label">Avg AQI</span><span class="info-value ${d.ward.avg_aqi < 100 ? 'aqi-good' : d.ward.avg_aqi < 200 ? 'aqi-moderate' : 'aqi-poor'}">${d.ward.avg_aqi ? Math.round(d.ward.avg_aqi) : 'N/A'}</span></div>`;
+                        html += `<div class="info-row"><span class="info-label">Ward Buildings</span><span class="info-value">${d.ward.total_buildings ? parseInt(d.ward.total_buildings).toLocaleString() : 0}</span></div>`;
+                    }
+                    
+                    // Flood
+                    html += `<div class="info-row"><span class="info-label">Flood Risk</span><span class="info-value ${d.flood_zone === 'High' ? 'flood-high' : d.flood_zone === 'Medium' ? 'flood-medium' : 'flood-none'}">${d.flood_zone || 'None'}</span></div>`;
+                    
+                    // Counts
+                    html += `<div class="info-row"><span class="info-label">Hospitals (2km)</span><span class="info-value">${d.counts.hospitals_2km || 0}</span></div>`;
+                    html += `<div class="info-row"><span class="info-label">Schools (2km)</span><span class="info-value">${d.counts.schools_2km || 0}</span></div>`;
+                    
+                    // Nearest hospitals
+                    html += `<div class="section-title" style="margin-top:12px;">🏥 Nearest Hospitals</div>`;
+                    d.hospitals.forEach(h => {
+                        html += `<div class="poi-item"><span>${h.name}</span><span class="poi-dist">${h.distance_m}m</span></div>`;
+                    });
+                    
+                    // Nearest schools
+                    html += `<div class="section-title" style="margin-top:12px;">🏫 Nearest Schools</div>`;
+                    d.schools.forEach(s => {
+                        html += `<div class="poi-item"><span>${s.name}</span><span class="poi-dist">${s.distance_m}m</span></div>`;
+                    });
+                    
+                    document.getElementById('info-panel').innerHTML = html;
+                });
+        });
+
+        // Ward chart
+        fetch('/api/ward_stats').then(r => r.json()).then(data => {
+            const ctx = document.getElementById('wardChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: data.slice(0, 8).map(w => w.ward_name.substring(0, 9)),
+                    datasets: [{
+                        label: 'Population',
+                        data: data.slice(0, 8).map(w => w.population),
+                        backgroundColor: '#4fc3f7'
+                    }]
+                },
+                options: {
+                    responsive: true, animation: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { ticks: { color: '#888', font: { size: 8 } } },
+                        y: { ticks: { color: '#888', font: { size: 8 } } }
+                    }
+                }
+            });
+        });
+    </script>
+</body>
+</html>
