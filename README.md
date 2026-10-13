@@ -1,8 +1,7 @@
 # GeoIntel — Delhi Spatial Intelligence System
 
 > **Developed in the DBMS Lab**  
-> **By:** Nirdesh Kumar (2402221530085)  
-> **Team:** Solo  
+> **By:** Nirdesh Kumar
 > **Under the supervision of Dr. Tanu Shree**
 
 ---
@@ -18,13 +17,8 @@ A PostgreSQL + PostGIS based spatial database management system for analyzing De
 | **Project Name** | GeoIntel — Delhi Spatial Intelligence System |
 | **Project Type** | DBMS Lab Project |
 | **Developed By** | Nirdesh Kumar |
-| **Roll No** | 2402221530085 |
-| **Section** | AIML B |
 | **Developed In** | DBMS Lab |
 | **Under the Supervision of** | Dr. Tanu Shree |
-| **Academic Year** | 2025–2026 |
-| **Team Size** | Solo |
-
 ---
 
 ## Overview
