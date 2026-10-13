@@ -1,0 +1,15 @@
+# Large data files (not for git)
+*.osm.pbf
+*.osm
+03_data/raw/*.pbf
+03_data/raw/*.osm
+
+# macOS
+.DS_Store
+
+# Python
+__pycache__/
+*.pyc
+
+# Logs
+*.log
