@@ -205,6 +205,33 @@ def insights():
         'area': area['area'],
         'languages': langs
     })
+@app.route('/api/pois/<poi_type>')
+def get_pois(poi_type):
+    conn = get_db()
+    cur = conn.cursor(cursor_factory=RealDictCursor)
+    cur.execute("""
+        SELECT poi_id, name, ST_X(geom) AS lon, ST_Y(geom) AS lat
+        FROM pois 
+        WHERE poi_type = %s AND geom IS NOT NULL
+        LIMIT 500
+    """, (poi_type,))
+    result = cur.fetchall()
+    conn.close()
+    return jsonify(result)
+
+@app.route('/api/poi_types')
+def poi_types():
+    conn = get_db()
+    cur = conn.cursor(cursor_factory=RealDictCursor)
+    cur.execute("""
+        SELECT poi_type, COUNT(*) AS count 
+        FROM pois 
+        GROUP BY poi_type 
+        ORDER BY count DESC
+    """)
+    result = cur.fetchall()
+    conn.close()
+    return jsonify(result)
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000)
