@@ -10,10 +10,40 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
     <style>
+        :root {
+            --bg-primary: #f8f9fa;
+            --bg-secondary: #ffffff;
+            --bg-tertiary: #f1f3f5;
+            --text-primary: #212529;
+            --text-secondary: #6c757d;
+            --text-muted: #adb5bd;
+            --border-color: #dee2e6;
+            --border-light: #e9ecef;
+            --accent: #1e3a5f;
+            --accent-light: #e7f1ff;
+            --hover-bg: #f1f3f5;
+            --shadow: rgba(0,0,0,0.1);
+            --good: #2d6a4f;
+            --moderate: #d97706;
+            --poor: #dc3545;
+        }
+        [data-theme="dark"] {
+            --bg-primary: #0f1419;
+            --bg-secondary: #1a1f2e;
+            --bg-tertiary: #252b3d;
+            --text-primary: #e9ecef;
+            --text-secondary: #adb5bd;
+            --text-muted: #6c757d;
+            --border-color: #2d3548;
+            --border-light: #2d3548;
+            --accent: #4a90c2;
+            --accent-light: #1a3a5a;
+            --hover-bg: #252b3d;
+            --shadow: rgba(0,0,0,0.4);
+        }
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        html, body { height: 100%; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-size: 13px; color: #212529; background: #f8f9fa; }
+        html, body { height: 100%; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-size: 13px; color: var(--text-primary); background: var(--bg-primary); transition: background 0.3s, color 0.3s; }
 
-        /* TOP BAR */
         .topbar {
             height: 48px; background: #1e3a5f; color: white;
             display: flex; align-items: center; justify-content: space-between;
@@ -24,152 +54,221 @@
         .topbar h1 { font-size: 17px; font-weight: 600; letter-spacing: -0.3px; }
         .topbar .divider { color: #4a6f9a; }
         .topbar .tagline { font-size: 12px; color: #a8c0d8; font-weight: 400; }
-        .topbar-right { display: flex; align-items: center; gap: 16px; font-size: 12px; }
+        .topbar-right { display: flex; align-items: center; gap: 12px; font-size: 12px; }
         .topbar-right a { color: #a8c0d8; text-decoration: none; display: flex; align-items: center; gap: 5px; }
         .topbar-right a:hover { color: white; }
         .topbar .badge { background: #2d6a4f; padding: 2px 8px; border-radius: 3px; font-size: 11px; }
 
-        /* MAIN LAYOUT */
+        .theme-toggle {
+            background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);
+            color: white; padding: 6px 10px; border-radius: 5px; cursor: pointer;
+            font-size: 12px; display: flex; align-items: center; gap: 6px;
+            transition: background 0.2s; font-family: inherit;
+        }
+        .theme-toggle:hover { background: rgba(255,255,255,0.2); }
+
         .container { display: flex; height: calc(100vh - 48px); }
 
-        /* SIDEBAR */
         .sidebar {
-            width: 300px; background: white; border-right: 1px solid #dee2e6;
+            width: 300px; background: var(--bg-secondary); border-right: 1px solid var(--border-color);
             display: flex; flex-direction: column; overflow: hidden;
+            transition: background 0.3s, border 0.3s;
         }
         .sidebar-scroll { flex: 1; overflow-y: auto; padding: 14px; }
         .sidebar-scroll::-webkit-scrollbar { width: 6px; }
-        .sidebar-scroll::-webkit-scrollbar-thumb { background: #ced4da; border-radius: 3px; }
+        .sidebar-scroll::-webkit-scrollbar-thumb { background: var(--text-muted); border-radius: 3px; }
 
-        /* SEARCH */
-        .search-wrap {
-            position: relative; margin-bottom: 14px;
-        }
+        .search-wrap { position: relative; margin-bottom: 14px; }
         .search-wrap input {
             width: 100%; padding: 8px 12px 8px 32px;
-            border: 1px solid #dee2e6; border-radius: 6px;
+            border: 1px solid var(--border-color); border-radius: 6px;
             font-size: 13px; outline: none; transition: border 0.2s;
-            font-family: inherit;
+            font-family: inherit; background: var(--bg-secondary); color: var(--text-primary);
         }
-        .search-wrap input:focus { border-color: #1e3a5f; }
+        .search-wrap input:focus { border-color: var(--accent); }
+        .search-wrap input::placeholder { color: var(--text-muted); }
         .search-wrap i {
             position: absolute; left: 10px; top: 50%; transform: translateY(-50%);
-            color: #adb5bd; font-size: 12px;
+            color: var(--text-muted); font-size: 12px;
         }
 
-        /* SECTION */
         .section { margin-bottom: 14px; }
         .section-header {
-            font-size: 11px; font-weight: 600; color: #6c757d;
+            font-size: 11px; font-weight: 600; color: var(--text-secondary);
             text-transform: uppercase; letter-spacing: 0.5px;
             padding-bottom: 6px; margin-bottom: 8px;
-            border-bottom: 1px solid #e9ecef;
+            border-bottom: 1px solid var(--border-light);
         }
 
-        /* POI GROUP */
         .poi-group { margin-bottom: 4px; }
         .poi-group-header {
             display: flex; align-items: center; justify-content: space-between;
             padding: 7px 8px; cursor: pointer; border-radius: 4px;
-            font-size: 12px; font-weight: 500; color: #343a40;
+            font-size: 12px; font-weight: 500; color: var(--text-primary);
             user-select: none;
         }
-        .poi-group-header:hover { background: #f1f3f5; }
+        .poi-group-header:hover { background: var(--hover-bg); }
         .poi-group-header .left { display: flex; align-items: center; gap: 6px; }
         .poi-group-header .arrow {
-            font-size: 9px; color: #adb5bd; transition: transform 0.2s;
+            font-size: 9px; color: var(--text-muted); transition: transform 0.2s;
         }
         .poi-group.open .arrow { transform: rotate(90deg); }
         .poi-group-body { display: none; padding: 4px 0 4px 8px; }
         .poi-group.open .poi-group-body { display: block; }
         .poi-group-count {
-            background: #e9ecef; color: #495057;
+            background: var(--bg-tertiary); color: var(--text-secondary);
             padding: 1px 6px; border-radius: 10px;
             font-size: 10px; font-weight: 600;
         }
 
-        /* POI TOGGLE */
         .poi-toggle {
             display: flex; align-items: center; justify-content: space-between;
             padding: 5px 8px; border-radius: 4px; cursor: pointer;
             font-size: 12px; transition: background 0.15s;
+            color: var(--text-primary);
         }
-        .poi-toggle:hover { background: #f1f3f5; }
-        .poi-toggle.active { background: #e7f1ff; color: #1e3a5f; font-weight: 500; }
+        .poi-toggle:hover { background: var(--hover-bg); }
+        .poi-toggle.active { background: var(--accent-light); color: var(--accent); font-weight: 500; }
         .poi-toggle .left { display: flex; align-items: center; gap: 7px; }
         .poi-toggle .check {
-            width: 14px; height: 14px; border: 1.5px solid #ced4da;
+            width: 14px; height: 14px; border: 1.5px solid var(--border-color);
             border-radius: 3px; display: flex; align-items: center; justify-content: center;
             font-size: 9px; color: white; transition: all 0.15s;
         }
-        .poi-toggle.active .check { background: #1e3a5f; border-color: #1e3a5f; }
-        .poi-toggle .count { font-size: 10px; color: #868e96; }
+        .poi-toggle.active .check { background: var(--accent); border-color: var(--accent); }
+        .poi-toggle .count { font-size: 10px; color: var(--text-muted); }
 
-        /* STATS */
         .stat-row {
             display: flex; justify-content: space-between;
             padding: 5px 0; font-size: 12px;
-            border-bottom: 1px solid #f1f3f5;
+            border-bottom: 1px solid var(--border-light);
         }
         .stat-row:last-child { border-bottom: none; }
-        .stat-row .label { color: #6c757d; }
-        .stat-row .value { font-weight: 600; color: #1e3a5f; }
+        .stat-row .label { color: var(--text-secondary); }
+        .stat-row .value { font-weight: 600; color: var(--accent); }
 
-        /* MAP */
         .map-area { flex: 1; position: relative; display: flex; flex-direction: column; }
         #map { flex: 1; }
 
-        /* BOTTOM INFO PANEL */
+        [data-theme="dark"] .leaflet-tile {
+            filter: brightness(0.65) invert(1) contrast(2.5) hue-rotate(200deg) saturate(0.3) brightness(0.75);
+        }
+
+        .map-corner-controls {
+            position: absolute; top: 16px; right: 16px; z-index: 500;
+            display: flex; flex-direction: column; gap: 10px; align-items: flex-end;
+        }
+        .corner-btn {
+            background: var(--bg-secondary); border: 1px solid var(--border-color);
+            color: var(--text-primary); width: 40px; height: 40px;
+            border-radius: 8px; cursor: pointer; display: flex;
+            align-items: center; justify-content: center;
+            box-shadow: 0 2px 8px var(--shadow); font-size: 15px;
+            transition: background 0.2s;
+        }
+        .corner-btn:hover { background: var(--hover-bg); }
+        .corner-btn.active { background: var(--accent); color: white; border-color: var(--accent); }
+
+        .radius-panel {
+            background: var(--bg-secondary); border: 1px solid var(--border-color);
+            border-radius: 8px; padding: 14px; width: 260px;
+            box-shadow: 0 4px 12px var(--shadow);
+            display: none;
+        }
+        .radius-panel.show { display: block; }
+        .radius-panel-title {
+            font-size: 11px; font-weight: 600; color: var(--text-secondary);
+            text-transform: uppercase; letter-spacing: 0.5px;
+            margin-bottom: 10px; padding-bottom: 8px;
+            border-bottom: 1px solid var(--border-light);
+        }
+        .radius-presets {
+            display: grid; grid-template-columns: repeat(5, 1fr);
+            gap: 4px; margin-bottom: 12px;
+        }
+        .radius-presets button {
+            padding: 6px 2px; border: 1px solid var(--border-color);
+            background: var(--bg-secondary); color: var(--text-primary);
+            font-size: 11px; border-radius: 4px; cursor: pointer;
+            transition: all 0.15s; font-family: inherit;
+        }
+        .radius-presets button:hover { background: var(--hover-bg); }
+        .radius-presets button.active {
+            background: var(--accent); color: white; border-color: var(--accent);
+            font-weight: 600;
+        }
+        .radius-slider-wrap {
+            display: flex; align-items: center; gap: 10px;
+        }
+        .radius-slider-wrap input[type="range"] {
+            flex: 1; height: 4px;
+            -webkit-appearance: none;
+            background: var(--border-color); border-radius: 2px;
+            outline: none;
+        }
+        .radius-slider-wrap input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px; height: 16px; border-radius: 50%;
+            background: var(--accent); cursor: pointer;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+        }
+        .radius-slider-wrap input[type="range"]::-moz-range-thumb {
+            width: 16px; height: 16px; border-radius: 50%;
+            background: var(--accent); cursor: pointer; border: none;
+        }
+        .radius-value {
+            font-size: 12px; font-weight: 600; color: var(--accent);
+            min-width: 55px; text-align: right;
+        }
+
         .bottom-panel {
-            background: white; border-top: 1px solid #dee2e6;
-            padding: 12px 20px; max-height: 180px; overflow-y: auto;
+            background: var(--bg-secondary); border-top: 1px solid var(--border-color);
+            padding: 12px 20px; max-height: 260px; overflow-y: auto;
             display: none;
         }
         .bottom-panel.show { display: block; }
         .bottom-panel::-webkit-scrollbar { height: 6px; width: 6px; }
-        .bottom-panel::-webkit-scrollbar-thumb { background: #ced4da; border-radius: 3px; }
+        .bottom-panel::-webkit-scrollbar-thumb { background: var(--text-muted); border-radius: 3px; }
 
         .bp-header {
             display: flex; align-items: center; justify-content: space-between;
             margin-bottom: 10px; padding-bottom: 8px;
-            border-bottom: 1px solid #e9ecef;
+            border-bottom: 1px solid var(--border-light);
         }
-        .bp-title { font-size: 13px; font-weight: 600; color: #1e3a5f; }
-        .bp-close { cursor: pointer; color: #adb5bd; font-size: 14px; }
-        .bp-close:hover { color: #495057; }
+        .bp-title { font-size: 13px; font-weight: 600; color: var(--accent); }
+        .bp-close { cursor: pointer; color: var(--text-muted); font-size: 14px; }
+        .bp-close:hover { color: var(--text-primary); }
 
         .bp-grid {
             display: grid; grid-template-columns: repeat(4, 1fr);
             gap: 12px; margin-bottom: 10px;
         }
         .bp-stat { padding: 4px 0; }
-        .bp-stat .lbl { font-size: 10px; color: #6c757d; text-transform: uppercase; letter-spacing: 0.3px; }
-        .bp-stat .val { font-size: 15px; font-weight: 600; color: #1e3a5f; margin-top: 2px; }
-        .bp-stat .val.good { color: #2d6a4f; }
-        .bp-stat .val.moderate { color: #d97706; }
-        .bp-stat .val.poor { color: #dc3545; }
+        .bp-stat .lbl { font-size: 10px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.3px; }
+        .bp-stat .val { font-size: 15px; font-weight: 600; color: var(--accent); margin-top: 2px; }
+        .bp-stat .val.good { color: var(--good); }
+        .bp-stat .val.moderate { color: var(--moderate); }
+        .bp-stat .val.poor { color: var(--poor); }
 
         .bp-section { margin-top: 8px; }
         .bp-section-title {
-            font-size: 10px; font-weight: 600; color: #6c757d;
+            font-size: 10px; font-weight: 600; color: var(--text-secondary);
             text-transform: uppercase; letter-spacing: 0.3px;
             margin-bottom: 4px;
         }
         .bp-items { display: flex; flex-wrap: wrap; gap: 8px 16px; font-size: 12px; }
-        .bp-item { display: flex; align-items: center; gap: 5px; }
-        .bp-item .dist { color: #1e3a5f; font-weight: 600; font-size: 11px; }
+        .bp-item { display: flex; align-items: center; gap: 5px; color: var(--text-primary); }
+        .bp-item .dist { color: var(--accent); font-weight: 600; font-size: 11px; }
 
-        /* LEAFLET OVERRIDES */
         .leaflet-popup-content-wrapper { border-radius: 6px; font-size: 12px; }
         .leaflet-popup-content { margin: 10px 14px; }
         .leaflet-control-zoom a {
-            background: white; color: #1e3a5f !important;
-            border: 1px solid #dee2e6 !important;
+            background: var(--bg-secondary); color: var(--accent) !important;
+            border: 1px solid var(--border-color) !important;
             font-weight: 600;
         }
-        .leaflet-control-zoom a:hover { background: #f1f3f5; }
+        .leaflet-control-zoom a:hover { background: var(--hover-bg); }
 
-        /* MARKER */
         .poi-marker {
             display: flex; align-items: center; justify-content: center;
             width: 26px; height: 26px; border-radius: 50%;
@@ -181,7 +280,6 @@
 </head>
 <body>
 
-<!-- TOP BAR -->
 <div class="topbar">
     <div class="topbar-left">
         <h1>GeoIntel</h1>
@@ -189,6 +287,10 @@
         <span class="tagline">Delhi Spatial Intelligence System</span>
     </div>
     <div class="topbar-right">
+        <button class="theme-toggle" id="theme-toggle">
+            <i class="fa-solid fa-sun" id="theme-icon"></i>
+            <span id="theme-label">Light</span>
+        </button>
         <span class="badge">v1.0</span>
         <a href="https://github.com/0xnirdesh/GeoIntel" target="_blank">
             <i class="fa-brands fa-github"></i> GitHub
@@ -197,24 +299,18 @@
 </div>
 
 <div class="container">
-
-    <!-- SIDEBAR -->
     <div class="sidebar">
         <div class="sidebar-scroll">
-
-            <!-- SEARCH -->
             <div class="search-wrap">
                 <i class="fa-solid fa-magnifying-glass"></i>
                 <input type="text" id="poi-search" placeholder="Search POI layers..."/>
             </div>
 
-            <!-- POI LAYERS -->
             <div class="section">
                 <div class="section-header">POI Layers</div>
                 <div id="poi-groups"></div>
             </div>
 
-            <!-- STATS -->
             <div class="section">
                 <div class="section-header">Delhi Snapshot</div>
                 <div id="stats-container">
@@ -224,17 +320,34 @@
                     <div class="stat-row"><span class="label">Buildings</span><span class="value" id="s-build">-</span></div>
                     <div class="stat-row"><span class="label">Roads</span><span class="value" id="s-roads">-</span></div>
                     <div class="stat-row"><span class="label">Total POIs</span><span class="value" id="s-pois">-</span></div>
-                    <div class="stat-row"><span class="label">Avg AQI</span><span class="value" id="s-aqi">-</span></div>
-                    <div class="stat-row"><span class="label">Area</span><span class="value" id="s-area">-</span></div>
                 </div>
             </div>
-
         </div>
     </div>
 
-    <!-- MAP + BOTTOM PANEL -->
     <div class="map-area">
         <div id="map"></div>
+
+        <div class="map-corner-controls">
+            <button class="corner-btn" id="radius-toggle" title="Search Radius">
+                <i class="fa-solid fa-circle-dot"></i>
+            </button>
+            <div class="radius-panel" id="radius-panel">
+                <div class="radius-panel-title">Search Radius</div>
+                <div class="radius-presets">
+                    <button data-r="500">500m</button>
+                    <button data-r="1000">1km</button>
+                    <button data-r="2000" class="active">2km</button>
+                    <button data-r="5000">5km</button>
+                    <button data-r="10000">10km</button>
+                </div>
+                <div class="radius-slider-wrap">
+                    <input type="range" id="radius-slider" min="500" max="10000" step="500" value="2000"/>
+                    <span class="radius-value" id="radius-value">2.0 km</span>
+                </div>
+            </div>
+        </div>
+
         <div class="bottom-panel" id="bottom-panel">
             <div class="bp-header">
                 <div class="bp-title" id="bp-title">Location Info</div>
@@ -243,10 +356,49 @@
             <div id="bp-content"></div>
         </div>
     </div>
-
 </div>
 
 <script>
+// ===== THEME MANAGEMENT =====
+const themeToggle = document.getElementById('theme-toggle');
+const themeIcon = document.getElementById('theme-icon');
+const themeLabel = document.getElementById('theme-label');
+
+function applyTheme(theme) {
+    if (theme === 'auto') {
+        if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+            document.documentElement.setAttribute('data-theme', 'dark');
+        } else {
+            document.documentElement.removeAttribute('data-theme');
+        }
+        themeIcon.className = 'fa-solid fa-circle-half-stroke';
+        themeLabel.textContent = 'Auto';
+    } else if (theme === 'dark') {
+        document.documentElement.setAttribute('data-theme', 'dark');
+        themeIcon.className = 'fa-solid fa-moon';
+        themeLabel.textContent = 'Dark';
+    } else {
+        document.documentElement.removeAttribute('data-theme');
+        themeIcon.className = 'fa-solid fa-sun';
+        themeLabel.textContent = 'Light';
+    }
+    localStorage.setItem('geointel-theme', theme);
+}
+
+let currentTheme = localStorage.getItem('geointel-theme') || 'light';
+applyTheme(currentTheme);
+
+themeToggle.addEventListener('click', () => {
+    const order = ['light', 'dark', 'auto'];
+    const idx = order.indexOf(currentTheme);
+    currentTheme = order[(idx + 1) % order.length];
+    applyTheme(currentTheme);
+});
+
+window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+    if (currentTheme === 'auto') applyTheme('auto');
+});
+
 // ===== MAP INIT =====
 const map = L.map('map', {
     preferCanvas: true, zoomAnimation: false, fadeAnimation: false, markerZoomAnimation: false
@@ -278,9 +430,11 @@ const poiConfig = {
 };
 
 const groupOrder = ['Healthcare', 'Transport', 'Food & Shopping', 'Daily Needs', 'Emergency', 'Other'];
-
-// Default ON — top 5
 const defaultOn = ['hospital', 'school', 'pharmacy', 'bus_stop', 'metro_station'];
+
+// ===== STATE =====
+let currentRadius = 2000;
+let lastClick = null;
 
 // ===== STATS =====
 fetch('/api/stats').then(r => r.json()).then(d => {
@@ -290,10 +444,6 @@ fetch('/api/stats').then(r => r.json()).then(d => {
     document.getElementById('s-build').textContent = parseInt(d.buildings).toLocaleString();
     document.getElementById('s-roads').textContent = parseInt(d.roads).toLocaleString();
     document.getElementById('s-pois').textContent = parseInt(d.pois).toLocaleString();
-});
-fetch('/api/insights').then(r => r.json()).then(d => {
-    document.getElementById('s-aqi').textContent = d.avg_aqi;
-    document.getElementById('s-area').textContent = d.area + ' km²';
 });
 
 // ===== MARKER FACTORY =====
@@ -327,10 +477,8 @@ function createCluster(color) {
     });
 }
 
-// ===== LOAD POI LAYER =====
 async function loadLayer(type) {
     if (activeLayers[type]) return;
-
     const cfg = poiConfig[type];
     const icon = makePoiIcon(cfg.emoji, cfg.color, 26);
     const cluster = createCluster(cfg.color);
@@ -370,6 +518,7 @@ function toggleLayer(type, el) {
         el.classList.add('active');
         loadLayer(type);
     }
+    if (lastClick) refreshLocationInfo();
 }
 
 // ===== BUILD POI ACCORDION =====
@@ -380,7 +529,6 @@ async function buildPoiGroups() {
     const types = await res.json();
     types.forEach(t => { poiCounts[t.poi_type] = t.count; });
 
-    // Add hospital & school counts from stats
     const statsRes = await fetch('/api/stats');
     const stats = await statsRes.json();
     poiCounts['hospital'] = parseInt(stats.hospitals);
@@ -403,11 +551,8 @@ async function buildPoiGroups() {
         const items = grouped[groupName];
         if (!items || items.length === 0) return;
 
-        const totalCount = items.reduce((s, i) => s + i.count, 0);
-
         const groupDiv = document.createElement('div');
         groupDiv.className = 'poi-group open';
-        groupDiv.dataset.group = groupName;
 
         groupDiv.innerHTML = `
             <div class="poi-group-header">
@@ -445,11 +590,7 @@ async function buildPoiGroups() {
         container.appendChild(groupDiv);
     });
 
-    // Load default ON layers
-    defaultOn.forEach(type => {
-        const el = document.querySelector(`.poi-toggle[data-type="${type}"]`);
-        if (el) loadLayer(type);
-    });
+    defaultOn.forEach(type => { loadLayer(type); });
 }
 
 buildPoiGroups();
@@ -478,11 +619,46 @@ document.getElementById('poi-search').addEventListener('input', function(e) {
         const match = !q || el.dataset.search.includes(q);
         el.style.display = match ? '' : 'none';
     });
-    // Auto expand groups with matches
     document.querySelectorAll('.poi-group').forEach(g => {
         const visible = Array.from(g.querySelectorAll('.poi-toggle')).some(el => el.style.display !== 'none');
         if (q && visible) g.classList.add('open');
     });
+});
+
+// ===== RADIUS CONTROL =====
+const radiusToggle = document.getElementById('radius-toggle');
+const radiusPanel = document.getElementById('radius-panel');
+const radiusSlider = document.getElementById('radius-slider');
+const radiusValue = document.getElementById('radius-value');
+
+radiusToggle.addEventListener('click', () => {
+    radiusPanel.classList.toggle('show');
+    radiusToggle.classList.toggle('active');
+});
+
+function formatRadius(val) {
+    return val >= 1000 ? (val/1000).toFixed(1) + ' km' : val + ' m';
+}
+
+function setRadius(val) {
+    currentRadius = val;
+    radiusSlider.value = val;
+    radiusValue.textContent = formatRadius(val);
+
+    document.querySelectorAll('.radius-presets button').forEach(btn => {
+        btn.classList.toggle('active', parseInt(btn.dataset.r) === val);
+    });
+
+    if (clickCircle) clickCircle.setRadius(val);
+    if (lastClick) refreshLocationInfo();
+}
+
+document.querySelectorAll('.radius-presets button').forEach(btn => {
+    btn.addEventListener('click', () => setRadius(parseInt(btn.dataset.r)));
+});
+
+radiusSlider.addEventListener('input', function() {
+    setRadius(parseInt(this.value));
 });
 
 // ===== MAP CLICK → LOCATION INFO =====
@@ -492,6 +668,8 @@ let clickCircle = null;
 map.on('click', function(e) {
     const lat = e.latlng.lat;
     const lon = e.latlng.lng;
+
+    lastClick = { lat, lon };
 
     if (clickMarker) map.removeLayer(clickMarker);
     if (clickCircle) map.removeLayer(clickCircle);
@@ -504,15 +682,26 @@ map.on('click', function(e) {
     }).addTo(map);
 
     clickCircle = L.circle([lat, lon], {
-        radius: 2000, color: '#1e3a5f',
+        radius: currentRadius, color: '#1e3a5f',
         fillColor: '#1e3a5f', fillOpacity: 0.05, weight: 1, dashArray: '4,4'
     }).addTo(map);
 
+    refreshLocationInfo();
+});
+
+function refreshLocationInfo() {
+    if (!lastClick) return;
+
+    const { lat, lon } = lastClick;
+
     document.getElementById('bp-title').textContent = 'Loading...';
-    document.getElementById('bp-content').innerHTML = '<p style="color:#6c757d;">Fetching data...</p>';
+    document.getElementById('bp-content').innerHTML = '<p style="color:var(--text-secondary);">Fetching data...</p>';
     document.getElementById('bottom-panel').classList.add('show');
 
-    fetch(`/api/location_info?lat=${lat}&lon=${lon}`)
+    const activeTypes = Object.keys(activeLayers);
+    const typesParam = activeTypes.length > 0 ? activeTypes.join(',') : 'hospital,school,pharmacy';
+
+    fetch(`/api/location_info?lat=${lat}&lon=${lon}&types=${typesParam}&radius=${currentRadius}`)
         .then(r => r.json())
         .then(d => {
             const wardName = d.ward ? d.ward.ward_name : 'Unknown Ward';
@@ -529,33 +718,29 @@ map.on('click', function(e) {
             html += `<div class="bp-stat"><div class="lbl">Flood Risk</div><div class="val ${floodClass}">${d.flood_zone || 'None'}</div></div>`;
             html += '</div>';
 
-            if (d.hospitals && d.hospitals.length) {
-                html += `<div class="bp-section"><div class="bp-section-title">🏥 Nearest Hospitals</div><div class="bp-items">`;
-                d.hospitals.forEach(h => html += `<div class="bp-item">${h.name} <span class="dist">${h.distance_m}m</span></div>`);
-                html += '</div></div>';
-            }
-
-            if (d.schools && d.schools.length) {
-                html += `<div class="bp-section"><div class="bp-section-title">🏫 Nearest Schools</div><div class="bp-items">`;
-                d.schools.forEach(s => html += `<div class="bp-item">${s.name} <span class="dist">${s.distance_m}m</span></div>`);
-                html += '</div></div>';
-            }
-
-            if (d.pharmacies && d.pharmacies.length) {
-                html += `<div class="bp-section"><div class="bp-section-title">💊 Nearest Pharmacies</div><div class="bp-items">`;
-                d.pharmacies.forEach(p => html += `<div class="bp-item">${p.name} <span class="dist">${p.distance_m}m</span></div>`);
-                html += '</div></div>';
+            if (d.nearest && Object.keys(d.nearest).length > 0) {
+                Object.keys(d.nearest).forEach(ptype => {
+                    const section = d.nearest[ptype];
+                    html += `<div class="bp-section"><div class="bp-section-title">${section.emoji} Nearest ${section.label}</div><div class="bp-items">`;
+                    section.items.forEach(item => {
+                        html += `<div class="bp-item">${item.name} <span class="dist">${item.distance_m}m</span></div>`;
+                    });
+                    html += '</div></div>';
+                });
+            } else {
+                html += `<p style="color:var(--text-secondary);font-size:12px;">No POI found within ${formatRadius(currentRadius)} radius.</p>`;
             }
 
             document.getElementById('bp-content').innerHTML = html;
         });
-});
+}
 
 function closePanel() {
     document.getElementById('bottom-panel').classList.remove('show');
     if (clickMarker) map.removeLayer(clickMarker);
     if (clickCircle) map.removeLayer(clickCircle);
     clickMarker = null; clickCircle = null;
+    lastClick = null;
 }
 </script>
 </body>
