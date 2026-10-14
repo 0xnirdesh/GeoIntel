@@ -9,414 +9,554 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; display: flex; height: 100vh; }
-        
-        .sidebar { width: 360px; background: #1a1a2e; color: white; overflow-y: auto; padding: 18px; }
-        .sidebar h1 { font-size: 22px; margin-bottom: 6px; color: #4fc3f7; }
-        .subtitle { font-size: 12px; color: #888; margin-bottom: 16px; }
-        
-        .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 16px; }
-        .stat-card {
-            background: #16213e; padding: 10px 12px; border-radius: 8px;
-            border-left: 3px solid #4fc3f7;
+        html, body { height: 100%; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-size: 13px; color: #212529; background: #f8f9fa; }
+
+        /* TOP BAR */
+        .topbar {
+            height: 48px; background: #1e3a5f; color: white;
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 0 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            position: relative; z-index: 1000;
         }
-        .stat-card .label { font-size: 10px; color: #888; text-transform: uppercase; }
-        .stat-card .value { font-size: 18px; font-weight: bold; color: #4fc3f7; }
-        
-        .section-title {
-            font-size: 12px; margin: 16px 0 8px 0; color: #4fc3f7;
-            text-transform: uppercase; letter-spacing: 1px;
-            border-bottom: 1px solid #2a2a4a; padding-bottom: 6px;
+        .topbar-left { display: flex; align-items: baseline; gap: 12px; }
+        .topbar h1 { font-size: 17px; font-weight: 600; letter-spacing: -0.3px; }
+        .topbar .divider { color: #4a6f9a; }
+        .topbar .tagline { font-size: 12px; color: #a8c0d8; font-weight: 400; }
+        .topbar-right { display: flex; align-items: center; gap: 16px; font-size: 12px; }
+        .topbar-right a { color: #a8c0d8; text-decoration: none; display: flex; align-items: center; gap: 5px; }
+        .topbar-right a:hover { color: white; }
+        .topbar .badge { background: #2d6a4f; padding: 2px 8px; border-radius: 3px; font-size: 11px; }
+
+        /* MAIN LAYOUT */
+        .container { display: flex; height: calc(100vh - 48px); }
+
+        /* SIDEBAR */
+        .sidebar {
+            width: 300px; background: white; border-right: 1px solid #dee2e6;
+            display: flex; flex-direction: column; overflow: hidden;
         }
-        
+        .sidebar-scroll { flex: 1; overflow-y: auto; padding: 14px; }
+        .sidebar-scroll::-webkit-scrollbar { width: 6px; }
+        .sidebar-scroll::-webkit-scrollbar-thumb { background: #ced4da; border-radius: 3px; }
+
+        /* SEARCH */
+        .search-wrap {
+            position: relative; margin-bottom: 14px;
+        }
+        .search-wrap input {
+            width: 100%; padding: 8px 12px 8px 32px;
+            border: 1px solid #dee2e6; border-radius: 6px;
+            font-size: 13px; outline: none; transition: border 0.2s;
+            font-family: inherit;
+        }
+        .search-wrap input:focus { border-color: #1e3a5f; }
+        .search-wrap i {
+            position: absolute; left: 10px; top: 50%; transform: translateY(-50%);
+            color: #adb5bd; font-size: 12px;
+        }
+
+        /* SECTION */
+        .section { margin-bottom: 14px; }
+        .section-header {
+            font-size: 11px; font-weight: 600; color: #6c757d;
+            text-transform: uppercase; letter-spacing: 0.5px;
+            padding-bottom: 6px; margin-bottom: 8px;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        /* POI GROUP */
+        .poi-group { margin-bottom: 4px; }
+        .poi-group-header {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 7px 8px; cursor: pointer; border-radius: 4px;
+            font-size: 12px; font-weight: 500; color: #343a40;
+            user-select: none;
+        }
+        .poi-group-header:hover { background: #f1f3f5; }
+        .poi-group-header .left { display: flex; align-items: center; gap: 6px; }
+        .poi-group-header .arrow {
+            font-size: 9px; color: #adb5bd; transition: transform 0.2s;
+        }
+        .poi-group.open .arrow { transform: rotate(90deg); }
+        .poi-group-body { display: none; padding: 4px 0 4px 8px; }
+        .poi-group.open .poi-group-body { display: block; }
+        .poi-group-count {
+            background: #e9ecef; color: #495057;
+            padding: 1px 6px; border-radius: 10px;
+            font-size: 10px; font-weight: 600;
+        }
+
+        /* POI TOGGLE */
+        .poi-toggle {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 5px 8px; border-radius: 4px; cursor: pointer;
+            font-size: 12px; transition: background 0.15s;
+        }
+        .poi-toggle:hover { background: #f1f3f5; }
+        .poi-toggle.active { background: #e7f1ff; color: #1e3a5f; font-weight: 500; }
+        .poi-toggle .left { display: flex; align-items: center; gap: 7px; }
+        .poi-toggle .check {
+            width: 14px; height: 14px; border: 1.5px solid #ced4da;
+            border-radius: 3px; display: flex; align-items: center; justify-content: center;
+            font-size: 9px; color: white; transition: all 0.15s;
+        }
+        .poi-toggle.active .check { background: #1e3a5f; border-color: #1e3a5f; }
+        .poi-toggle .count { font-size: 10px; color: #868e96; }
+
+        /* STATS */
+        .stat-row {
+            display: flex; justify-content: space-between;
+            padding: 5px 0; font-size: 12px;
+            border-bottom: 1px solid #f1f3f5;
+        }
+        .stat-row:last-child { border-bottom: none; }
+        .stat-row .label { color: #6c757d; }
+        .stat-row .value { font-weight: 600; color: #1e3a5f; }
+
+        /* MAP */
+        .map-area { flex: 1; position: relative; display: flex; flex-direction: column; }
         #map { flex: 1; }
-        
-        .info-panel {
-            background: #16213e; border-radius: 8px; padding: 12px;
-            font-size: 12px; max-height: 500px; overflow-y: auto;
+
+        /* BOTTOM INFO PANEL */
+        .bottom-panel {
+            background: white; border-top: 1px solid #dee2e6;
+            padding: 12px 20px; max-height: 180px; overflow-y: auto;
+            display: none;
         }
-        .info-row { 
-            display: flex; justify-content: space-between; 
-            padding: 5px 0; border-bottom: 1px solid #2a2a4a;
+        .bottom-panel.show { display: block; }
+        .bottom-panel::-webkit-scrollbar { height: 6px; width: 6px; }
+        .bottom-panel::-webkit-scrollbar-thumb { background: #ced4da; border-radius: 3px; }
+
+        .bp-header {
+            display: flex; align-items: center; justify-content: space-between;
+            margin-bottom: 10px; padding-bottom: 8px;
+            border-bottom: 1px solid #e9ecef;
         }
-        .info-row:last-child { border-bottom: none; }
-        .info-label { color: #888; }
-        .info-value { color: #4fc3f7; font-weight: bold; }
-        
-        .poi-item {
-            padding: 6px 8px; margin-bottom: 4px;
-            background: #1a1a2e; border-radius: 6px;
-            display: flex; justify-content: space-between; gap: 8px;
-            font-size: 11px;
+        .bp-title { font-size: 13px; font-weight: 600; color: #1e3a5f; }
+        .bp-close { cursor: pointer; color: #adb5bd; font-size: 14px; }
+        .bp-close:hover { color: #495057; }
+
+        .bp-grid {
+            display: grid; grid-template-columns: repeat(4, 1fr);
+            gap: 12px; margin-bottom: 10px;
         }
-        .poi-dist { color: #4fc3f7; font-weight: bold; white-space: nowrap; }
-        
-        .legend { background: #16213e; border-radius: 8px; padding: 10px; font-size: 11px; }
-        .legend-item { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
-        .legend-item:last-child { margin-bottom: 0; }
-        
-        .cluster-legend {
-            display: inline-flex; align-items: center; justify-content: center;
-            width: 24px; height: 24px; border-radius: 50%;
-            background: rgba(76, 175, 80, 0.6); color: white;
-            font-size: 10px; font-weight: bold;
-            border: 2px solid rgba(76, 175, 80, 0.9);
+        .bp-stat { padding: 4px 0; }
+        .bp-stat .lbl { font-size: 10px; color: #6c757d; text-transform: uppercase; letter-spacing: 0.3px; }
+        .bp-stat .val { font-size: 15px; font-weight: 600; color: #1e3a5f; margin-top: 2px; }
+        .bp-stat .val.good { color: #2d6a4f; }
+        .bp-stat .val.moderate { color: #d97706; }
+        .bp-stat .val.poor { color: #dc3545; }
+
+        .bp-section { margin-top: 8px; }
+        .bp-section-title {
+            font-size: 10px; font-weight: 600; color: #6c757d;
+            text-transform: uppercase; letter-spacing: 0.3px;
+            margin-bottom: 4px;
         }
-        
-        .poi-icon {
+        .bp-items { display: flex; flex-wrap: wrap; gap: 8px 16px; font-size: 12px; }
+        .bp-item { display: flex; align-items: center; gap: 5px; }
+        .bp-item .dist { color: #1e3a5f; font-weight: 600; font-size: 11px; }
+
+        /* LEAFLET OVERRIDES */
+        .leaflet-popup-content-wrapper { border-radius: 6px; font-size: 12px; }
+        .leaflet-popup-content { margin: 10px 14px; }
+        .leaflet-control-zoom a {
+            background: white; color: #1e3a5f !important;
+            border: 1px solid #dee2e6 !important;
+            font-weight: 600;
+        }
+        .leaflet-control-zoom a:hover { background: #f1f3f5; }
+
+        /* MARKER */
+        .poi-marker {
             display: flex; align-items: center; justify-content: center;
             width: 26px; height: 26px; border-radius: 50%;
             background: white; border: 2px solid;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.3); font-size: 13px;
-        }
-        .poi-icon.hospital { border-color: #e74c3c; color: #e74c3c; }
-        .poi-icon.school { border-color: #3498db; color: #3498db; }
-        
-        .flood-high { color: #e74c3c; }
-        .flood-medium { color: #f39c12; }
-        .flood-none { color: #27ae60; }
-        .aqi-good { color: #27ae60; }
-        .aqi-moderate { color: #f39c12; }
-        .aqi-poor { color: #e74c3c; }
-
-        /* POI Toggles */
-        .poi-toggles {
-            background: #16213e; border-radius: 8px; padding: 8px;
-            max-height: 260px; overflow-y: auto;
-        }
-        .poi-toggle {
-            display: flex; align-items: center; justify-content: space-between;
-            padding: 5px 8px; margin-bottom: 4px;
-            background: #1a1a2e; border-radius: 6px;
-            font-size: 11px; cursor: pointer;
-            transition: background 0.2s;
-        }
-        .poi-toggle:hover { background: #2a2a4a; }
-        .poi-toggle.active { background: #2a4a6a; border-left: 3px solid #4fc3f7; }
-        .poi-toggle-left { display: flex; align-items: center; gap: 6px; }
-        .poi-toggle-count {
-            background: #4fc3f7; color: #1a1a2e;
-            padding: 1px 6px; border-radius: 10px;
-            font-size: 10px; font-weight: bold;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+            font-size: 12px;
         }
     </style>
 </head>
 <body>
-    <div class="sidebar">
+
+<!-- TOP BAR -->
+<div class="topbar">
+    <div class="topbar-left">
         <h1>GeoIntel</h1>
-        <div class="subtitle">Delhi Spatial Intelligence System</div>
-        
-        <div class="stat-grid">
-            <div class="stat-card"><div class="label">Wards</div><div class="value" id="s-wards">-</div></div>
-            <div class="stat-card"><div class="label">Hospitals</div><div class="value" id="s-hosp">-</div></div>
-            <div class="stat-card"><div class="label">Schools</div><div class="value" id="s-schools">-</div></div>
-            <div class="stat-card"><div class="label">Buildings</div><div class="value" id="s-build">-</div></div>
-            <div class="stat-card"><div class="label">Roads</div><div class="value" id="s-roads">-</div></div>
-            <div class="stat-card"><div class="label">POIs</div><div class="value" id="s-pois">-</div></div>
-        </div>
+        <span class="divider">·</span>
+        <span class="tagline">Delhi Spatial Intelligence System</span>
+    </div>
+    <div class="topbar-right">
+        <span class="badge">v1.0</span>
+        <a href="https://github.com/0xnirdesh/GeoIntel" target="_blank">
+            <i class="fa-brands fa-github"></i> GitHub
+        </a>
+    </div>
+</div>
 
-        <div class="section-title">🗂️ POI Layers</div>
-        <div class="poi-toggles" id="poi-toggles">
-            <p style="color:#888;font-size:11px;">Loading...</p>
-        </div>
+<div class="container">
 
-        <div class="section-title">🗺️ Map Legend</div>
-        <div class="legend">
-            <div class="legend-item">
-                <div class="poi-icon hospital"><i class="fa-solid fa-hospital"></i></div>
-                <span>Hospital (single)</span>
+    <!-- SIDEBAR -->
+    <div class="sidebar">
+        <div class="sidebar-scroll">
+
+            <!-- SEARCH -->
+            <div class="search-wrap">
+                <i class="fa-solid fa-magnifying-glass"></i>
+                <input type="text" id="poi-search" placeholder="Search POI layers..."/>
             </div>
-            <div class="legend-item">
-                <div class="poi-icon school"><i class="fa-solid fa-school"></i></div>
-                <span>School (single)</span>
+
+            <!-- POI LAYERS -->
+            <div class="section">
+                <div class="section-header">POI Layers</div>
+                <div id="poi-groups"></div>
             </div>
-            <div class="legend-item">
-                <div class="cluster-legend">5</div>
-                <span>Cluster — itne markers ek jagah</span>
+
+            <!-- STATS -->
+            <div class="section">
+                <div class="section-header">Delhi Snapshot</div>
+                <div id="stats-container">
+                    <div class="stat-row"><span class="label">Wards</span><span class="value" id="s-wards">-</span></div>
+                    <div class="stat-row"><span class="label">Hospitals</span><span class="value" id="s-hosp">-</span></div>
+                    <div class="stat-row"><span class="label">Schools</span><span class="value" id="s-schools">-</span></div>
+                    <div class="stat-row"><span class="label">Buildings</span><span class="value" id="s-build">-</span></div>
+                    <div class="stat-row"><span class="label">Roads</span><span class="value" id="s-roads">-</span></div>
+                    <div class="stat-row"><span class="label">Total POIs</span><span class="value" id="s-pois">-</span></div>
+                    <div class="stat-row"><span class="label">Avg AQI</span><span class="value" id="s-aqi">-</span></div>
+                    <div class="stat-row"><span class="label">Area</span><span class="value" id="s-area">-</span></div>
+                </div>
             </div>
-            <div class="legend-item">
-                <div style="width:22px;height:12px;background:#e74c3c;opacity:0.5;border-radius:3px;"></div>
-                <span>High Flood Risk</span>
-            </div>
-            <div class="legend-item">
-                <div style="width:22px;height:12px;background:#f39c12;opacity:0.5;border-radius:3px;"></div>
-                <span>Medium Flood Risk</span>
-            </div>
-        </div>
-        
-        <div class="section-title">📍 Location Info</div>
-        <div class="info-panel" id="info-panel">
-            <p style="color:#888;">Map pe kisi bhi jagah click kar — us jagah ka pura data dikhega.</p>
-        </div>
-        
-        <div class="section-title">💡 Delhi Snapshot</div>
-        <div class="info-panel" id="insights-panel">
-            <p style="color:#888;">Loading insights...</p>
+
         </div>
     </div>
-    
-    <div id="map"></div>
 
-    <script>
-        // ===== MAP SETUP =====
-        const map = L.map('map', {
-            preferCanvas: true,
-            zoomAnimation: false, fadeAnimation: false, markerZoomAnimation: false
-        }).setView([28.6139, 77.2090], 11);
-        
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '© OpenStreetMap', maxZoom: 19
-        }).addTo(map);
+    <!-- MAP + BOTTOM PANEL -->
+    <div class="map-area">
+        <div id="map"></div>
+        <div class="bottom-panel" id="bottom-panel">
+            <div class="bp-header">
+                <div class="bp-title" id="bp-title">Location Info</div>
+                <div class="bp-close" onclick="closePanel()">✕</div>
+            </div>
+            <div id="bp-content"></div>
+        </div>
+    </div>
 
-        // ===== CLUSTER GROUPS FOR HOSPITALS & SCHOOLS =====
-        const hospitalCluster = L.markerClusterGroup({
-            maxClusterRadius: 50, disableClusteringAtZoom: 15,
-            spiderfyOnMaxZoom: false, showCoverageOnHover: false,
-            iconCreateFunction: function(cluster) {
-                const count = cluster.getChildCount();
-                return L.divIcon({
-                    html: '<div style="background:rgba(231,76,60,0.7);border:2px solid #e74c3c;border-radius:50%;width:36px;height:36px;display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:13px;">' + count + '</div>',
-                    className: '', iconSize: [36, 36]
-                });
-            }
-        });
-        
-        const schoolCluster = L.markerClusterGroup({
-            maxClusterRadius: 50, disableClusteringAtZoom: 15,
-            spiderfyOnMaxZoom: false, showCoverageOnHover: false,
-            iconCreateFunction: function(cluster) {
-                const count = cluster.getChildCount();
-                return L.divIcon({
-                    html: '<div style="background:rgba(52,152,219,0.7);border:2px solid #3498db;border-radius:50%;width:36px;height:36px;display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:13px;">' + count + '</div>',
-                    className: '', iconSize: [36, 36]
-                });
-            }
-        });
+</div>
 
-        function makeIcon(type) {
+<script>
+// ===== MAP INIT =====
+const map = L.map('map', {
+    preferCanvas: true, zoomAnimation: false, fadeAnimation: false, markerZoomAnimation: false
+}).setView([28.6139, 77.2090], 11);
+
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap', maxZoom: 19
+}).addTo(map);
+
+// ===== ICON CONFIG =====
+const poiConfig = {
+    'hospital':         { emoji: '🏥', color: '#dc3545', label: 'Hospitals',          group: 'Healthcare' },
+    'pharmacy':         { emoji: '💊', color: '#2d6a4f', label: 'Pharmacies',         group: 'Healthcare' },
+    'school':           { emoji: '🏫', color: '#0d6efd', label: 'Schools',            group: 'Healthcare' },
+    'bus_stop':         { emoji: '🚌', color: '#ffc107', label: 'Bus Stops',          group: 'Transport' },
+    'metro_station':    { emoji: '🚇', color: '#1e3a5f', label: 'Metro Stations',     group: 'Transport' },
+    'restaurant':       { emoji: '🍽️', color: '#e67e22', label: 'Restaurants',        group: 'Food & Shopping' },
+    'supermarket':      { emoji: '🛒', color: '#27ae60', label: 'Supermarkets',       group: 'Food & Shopping' },
+    'cinema':           { emoji: '🎬', color: '#8e44ad', label: 'Cinemas',            group: 'Food & Shopping' },
+    'bank':             { emoji: '🏦', color: '#3498db', label: 'Banks',              group: 'Daily Needs' },
+    'atm':              { emoji: '💰', color: '#16a085', label: 'ATMs',               group: 'Daily Needs' },
+    'post_office':      { emoji: '📮', color: '#c0392b', label: 'Post Offices',       group: 'Daily Needs' },
+    'library':          { emoji: '📚', color: '#2980b9', label: 'Libraries',          group: 'Daily Needs' },
+    'police':           { emoji: '🚓', color: '#34495e', label: 'Police Stations',    group: 'Emergency' },
+    'fire_station':     { emoji: '🚒', color: '#c0392b', label: 'Fire Stations',      group: 'Emergency' },
+    'place_of_worship': { emoji: '🛕', color: '#9b59b6', label: 'Places of Worship',  group: 'Other' },
+    'fuel':             { emoji: '⛽', color: '#d35400', label: 'Fuel Stations',      group: 'Other' },
+    'hotel':            { emoji: '🏨', color: '#8e44ad', label: 'Hotels',             group: 'Other' }
+};
+
+const groupOrder = ['Healthcare', 'Transport', 'Food & Shopping', 'Daily Needs', 'Emergency', 'Other'];
+
+// Default ON — top 5
+const defaultOn = ['hospital', 'school', 'pharmacy', 'bus_stop', 'metro_station'];
+
+// ===== STATS =====
+fetch('/api/stats').then(r => r.json()).then(d => {
+    document.getElementById('s-wards').textContent = d.wards;
+    document.getElementById('s-hosp').textContent = d.hospitals;
+    document.getElementById('s-schools').textContent = d.schools;
+    document.getElementById('s-build').textContent = parseInt(d.buildings).toLocaleString();
+    document.getElementById('s-roads').textContent = parseInt(d.roads).toLocaleString();
+    document.getElementById('s-pois').textContent = parseInt(d.pois).toLocaleString();
+});
+fetch('/api/insights').then(r => r.json()).then(d => {
+    document.getElementById('s-aqi').textContent = d.avg_aqi;
+    document.getElementById('s-area').textContent = d.area + ' km²';
+});
+
+// ===== MARKER FACTORY =====
+function makePoiIcon(emoji, color, size) {
+    size = size || 26;
+    return L.divIcon({
+        className: '',
+        html: `<div class="poi-marker" style="border-color:${color};width:${size}px;height:${size}px;">${emoji}</div>`,
+        iconSize: [size, size],
+        iconAnchor: [size/2, size/2],
+        popupAnchor: [0, -size/2]
+    });
+}
+
+// ===== LAYER STORAGE =====
+const activeLayers = {};
+
+function createCluster(color) {
+    return L.markerClusterGroup({
+        maxClusterRadius: 50,
+        disableClusteringAtZoom: 14,
+        spiderfyOnMaxZoom: false,
+        showCoverageOnHover: false,
+        iconCreateFunction: function(cluster) {
+            const count = cluster.getChildCount();
             return L.divIcon({
-                className: '',
-                html: `<div class="poi-icon ${type}"><i class="fa-solid fa-${type}"></i></div>`,
-                iconSize: [26, 26], iconAnchor: [13, 13], popupAnchor: [0, -13]
+                html: `<div style="background:${color};opacity:0.85;border:2px solid white;border-radius:50%;width:36px;height:36px;display:flex;align-items:center;justify-content:center;color:white;font-weight:600;font-size:12px;box-shadow:0 2px 6px rgba(0,0,0,0.25);">${count}</div>`,
+                className: '', iconSize: [36, 36]
             });
         }
-        const hospitalIcon = makeIcon('hospital');
-        const schoolIcon = makeIcon('school');
+    });
+}
 
-        // ===== STATS =====
-        fetch('/api/stats').then(r => r.json()).then(d => {
-            document.getElementById('s-wards').textContent = d.wards;
-            document.getElementById('s-hosp').textContent = d.hospitals;
-            document.getElementById('s-schools').textContent = d.schools;
-            document.getElementById('s-build').textContent = parseInt(d.buildings).toLocaleString();
-            document.getElementById('s-roads').textContent = parseInt(d.roads).toLocaleString();
-            document.getElementById('s-pois').textContent = parseInt(d.pois).toLocaleString();
-        });
+// ===== LOAD POI LAYER =====
+async function loadLayer(type) {
+    if (activeLayers[type]) return;
 
-        // ===== HOSPITALS =====
-        fetch('/api/hospitals').then(r => r.json()).then(data => {
-            data.forEach(h => {
-                if (h.lat && h.lon) {
-                    L.marker([h.lat, h.lon], { icon: hospitalIcon })
-                        .bindPopup('<b>🏥 ' + h.name + '</b>')
-                        .addTo(hospitalCluster);
-                }
-            });
-            map.addLayer(hospitalCluster);
-        });
+    const cfg = poiConfig[type];
+    const icon = makePoiIcon(cfg.emoji, cfg.color, 26);
+    const cluster = createCluster(cfg.color);
 
-        // ===== SCHOOLS =====
-        fetch('/api/schools').then(r => r.json()).then(data => {
-            data.forEach(s => {
-                if (s.lat && s.lon) {
-                    L.marker([s.lat, s.lon], { icon: schoolIcon })
-                        .bindPopup('<b>🏫 ' + s.name + '</b>')
-                        .addTo(schoolCluster);
-                }
-            });
-            map.addLayer(schoolCluster);
-        });
+    let url;
+    if (type === 'hospital') url = '/api/hospitals';
+    else if (type === 'school') url = '/api/schools';
+    else url = '/api/pois/' + type;
 
-        // ===== FLOOD ZONES =====
-        fetch('/api/flood_zones').then(r => r.json()).then(data => {
-            const features = data.filter(f => f.geometry).map(f => ({
-                type: 'Feature', properties: { risk: f.risk_level },
-                geometry: JSON.parse(f.geometry)
-            }));
-            if (features.length > 0) {
-                L.geoJSON({ type: 'FeatureCollection', features }, {
-                    style: (f) => ({
-                        color: f.properties.risk === 'High' ? '#e74c3c' : '#f39c12',
-                        weight: 1, fillOpacity: 0.25
-                    }),
-                    renderer: L.canvas()
-                }).bindPopup(l => '⚠️ ' + l.feature.properties.risk + ' Flood Risk').addTo(map);
+    try {
+        const res = await fetch(url);
+        const data = await res.json();
+        data.forEach(item => {
+            if (item.lat && item.lon) {
+                L.marker([item.lat, item.lon], { icon })
+                    .bindPopup(`<b>${cfg.emoji} ${item.name || 'Unnamed'}</b>`)
+                    .addTo(cluster);
             }
         });
+        cluster.addTo(map);
+        activeLayers[type] = cluster;
+    } catch(e) { console.error('Layer load failed', type, e); }
+}
 
-        // ===== SINGLE CLICK MARKER =====
-        let clickMarker = null;
-        let clickCircle = null;
+function removeLayer(type) {
+    if (activeLayers[type]) {
+        map.removeLayer(activeLayers[type]);
+        delete activeLayers[type];
+    }
+}
 
-        map.on('click', function(e) {
-            const lat = e.latlng.lat;
-            const lon = e.latlng.lng;
-            
-            if (clickMarker) map.removeLayer(clickMarker);
-            if (clickCircle) map.removeLayer(clickCircle);
-            
-            clickMarker = L.marker([lat, lon], {
-                icon: L.divIcon({
-                    html: '<div style="background:#4fc3f7;width:16px;height:16px;border-radius:50%;border:3px solid white;box-shadow:0 2px 6px rgba(0,0,0,0.5);"></div>',
-                    iconSize: [16, 16], iconAnchor: [8, 8]
-                })
-            }).addTo(map);
-            
-            clickCircle = L.circle([lat, lon], {
-                radius: 2000, color: '#4fc3f7',
-                fillColor: '#4fc3f7', fillOpacity: 0.08, weight: 1, dashArray: '4,4'
-            }).addTo(map);
-            
-            document.getElementById('info-panel').innerHTML = '<p style="color:#4fc3f7;">Loading...</p>';
-            
-            fetch(`/api/location_info?lat=${lat}&lon=${lon}`)
-                .then(r => r.json())
-                .then(d => {
-                    let html = '';
-                    
-                    if (d.ward) {
-                        html += `<div style="margin-bottom:8px;"><b style="color:#4fc3f7;">📍 ${d.ward.ward_name || 'Unknown Ward'}</b></div>`;
-                        html += `<div class="info-row"><span class="info-label">Population</span><span class="info-value">${d.ward.population ? parseInt(d.ward.population).toLocaleString() : 'N/A'}</span></div>`;
-                        html += `<div class="info-row"><span class="info-label">Literacy</span><span class="info-value">${d.ward.literacy ? d.ward.literacy + '%' : 'N/A'}</span></div>`;
-                        html += `<div class="info-row"><span class="info-label">Avg AQI</span><span class="info-value ${d.ward.avg_aqi < 100 ? 'aqi-good' : d.ward.avg_aqi < 200 ? 'aqi-moderate' : 'aqi-poor'}">${d.ward.avg_aqi ? Math.round(d.ward.avg_aqi) : 'N/A'}</span></div>`;
-                        html += `<div class="info-row"><span class="info-label">Ward Buildings</span><span class="info-value">${d.ward.total_buildings ? parseInt(d.ward.total_buildings).toLocaleString() : 0}</span></div>`;
-                    }
-                    
-                    html += `<div class="info-row"><span class="info-label">Flood Risk</span><span class="info-value ${d.flood_zone === 'High' ? 'flood-high' : d.flood_zone === 'Medium' ? 'flood-medium' : 'flood-none'}">${d.flood_zone || 'None'}</span></div>`;
-                    
-                    html += `<div class="info-row"><span class="info-label">Hospitals (2km)</span><span class="info-value">${d.counts.hospitals_2km || 0}</span></div>`;
-                    html += `<div class="info-row"><span class="info-label">Schools (2km)</span><span class="info-value">${d.counts.schools_2km || 0}</span></div>`;
-                    
-                    html += `<div class="section-title" style="margin-top:12px;">🏥 Nearest Hospitals</div>`;
-                    d.hospitals.forEach(h => {
-                        html += `<div class="poi-item"><span>${h.name}</span><span class="poi-dist">${h.distance_m}m</span></div>`;
-                    });
-                    
-                    html += `<div class="section-title" style="margin-top:12px;">🏫 Nearest Schools</div>`;
-                    d.schools.forEach(s => {
-                        html += `<div class="poi-item"><span>${s.name}</span><span class="poi-dist">${s.distance_m}m</span></div>`;
-                    });
-                    
-                    document.getElementById('info-panel').innerHTML = html;
-                });
-        });
+function toggleLayer(type, el) {
+    if (activeLayers[type]) {
+        removeLayer(type);
+        el.classList.remove('active');
+    } else {
+        el.classList.add('active');
+        loadLayer(type);
+    }
+}
 
-        // ===== DELHI INSIGHTS =====
-        fetch('/api/insights').then(r => r.json()).then(d => {
-            let html = '';
-            
-            html += `<div class="info-row"><span class="info-label">🗺️ Total Area</span><span class="info-value">${d.area} km²</span></div>`;
-            
-            const aqiClass = d.avg_aqi < 100 ? 'aqi-good' : d.avg_aqi < 200 ? 'aqi-moderate' : 'aqi-poor';
-            html += `<div class="info-row"><span class="info-label">💨 Avg AQI</span><span class="info-value ${aqiClass}">${d.avg_aqi}</span></div>`;
-            
-            html += `<div class="info-row"><span class="info-label">🌊 High Flood Wards</span><span class="info-value flood-high">${d.flood_wards}</span></div>`;
-            
-            if (d.top_pop) {
-                html += `<div class="info-row"><span class="info-label">👥 Most Populated</span><span class="info-value">${d.top_pop.name.substring(0, 14)}</span></div>`;
-            }
-            
-            if (d.top_hosp) {
-                html += `<div class="info-row"><span class="info-label">🏥 Most Hospitals</span><span class="info-value">${d.top_hosp.name.substring(0, 14)} (${d.top_hosp.cnt})</span></div>`;
-            }
-            
-            html += `<div style="margin-top:10px;padding-top:8px;border-top:1px solid #2a2a4a;">`;
-            html += `<div class="info-label" style="margin-bottom:6px;">🗣️ Top Languages</div>`;
-            d.languages.forEach(l => {
-                html += `<div class="info-row"><span class="info-label">${l.language}</span><span class="info-value">${l.avg_pct}%</span></div>`;
-            });
-            html += `</div>`;
-            
-            document.getElementById('insights-panel').innerHTML = html;
-        });
+// ===== BUILD POI ACCORDION =====
+let poiCounts = {};
 
-        // ===== POI TOGGLES =====
-        const poiIcons = {
-            'bus_stop': { icon: 'fa-bus', color: '#f39c12' },
-            'restaurant': { icon: 'fa-utensils', color: '#e67e22' },
-            'bank': { icon: 'fa-building-columns', color: '#3498db' },
-            'atm': { icon: 'fa-money-bill', color: '#16a085' },
-            'place_of_worship': { icon: 'fa-place-of-worship', color: '#9b59b6' },
-            'pharmacy': { icon: 'fa-prescription-bottle-medical', color: '#e74c3c' },
-            'hotel': { icon: 'fa-bed', color: '#8e44ad' },
-            'metro_station': { icon: 'fa-train-subway', color: '#2c3e50' },
-            'fuel': { icon: 'fa-gas-pump', color: '#d35400' },
-            'supermarket': { icon: 'fa-cart-shopping', color: '#27ae60' },
-            'police': { icon: 'fa-shield-halved', color: '#34495e' },
-            'post_office': { icon: 'fa-envelope', color: '#c0392b' },
-            'cinema': { icon: 'fa-film', color: '#8e44ad' },
-            'library': { icon: 'fa-book', color: '#2980b9' },
-            'fire_station': { icon: 'fa-fire-extinguisher', color: '#c0392b' }
-        };
+async function buildPoiGroups() {
+    const res = await fetch('/api/poi_types');
+    const types = await res.json();
+    types.forEach(t => { poiCounts[t.poi_type] = t.count; });
 
-        const poiLayers = {};
+    // Add hospital & school counts from stats
+    const statsRes = await fetch('/api/stats');
+    const stats = await statsRes.json();
+    poiCounts['hospital'] = parseInt(stats.hospitals);
+    poiCounts['school'] = parseInt(stats.schools);
 
-        fetch('/api/poi_types').then(r => r.json()).then(types => {
-            const container = document.getElementById('poi-toggles');
-            container.innerHTML = '';
-            
-            types.forEach(t => {
-                const info = poiIcons[t.poi_type] || { icon: 'fa-location-dot', color: '#4fc3f7' };
-                const div = document.createElement('div');
-                div.className = 'poi-toggle';
-                div.dataset.type = t.poi_type;
-                div.innerHTML = `
-                    <div class="poi-toggle-left">
-                        <i class="fa-solid ${info.icon}" style="color:${info.color};width:14px;"></i>
-                        <span>${t.poi_type.replace(/_/g, ' ')}</span>
-                    </div>
-                    <span class="poi-toggle-count">${t.count}</span>
-                `;
-                div.onclick = () => togglePoi(t.poi_type, div);
-                container.appendChild(div);
-            });
-        });
+    const grouped = {};
+    groupOrder.forEach(g => grouped[g] = []);
 
-        function togglePoi(type, el) {
-            if (poiLayers[type]) {
-                map.removeLayer(poiLayers[type]);
-                delete poiLayers[type];
-                el.classList.remove('active');
-            } else {
-                const info = poiIcons[type] || { icon: 'fa-location-dot', color: '#4fc3f7' };
-                const icon = L.divIcon({
-                    className: '',
-                    html: `<div style="background:white;border:2px solid ${info.color};width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 4px rgba(0,0,0,0.3);"><i class="fa-solid ${info.icon}" style="color:${info.color};font-size:10px;"></i></div>`,
-                    iconSize: [22, 22], iconAnchor: [11, 11]
-                });
-                
-                const cluster = L.markerClusterGroup({
-                    maxClusterRadius: 50, disableClusteringAtZoom: 15,
-                    spiderfyOnMaxZoom: false, showCoverageOnHover: false
-                });
-                
-                fetch(`/api/pois/${type}`).then(r => r.json()).then(data => {
-                    data.forEach(p => {
-                        if (p.lat && p.lon) {
-                            L.marker([p.lat, p.lon], { icon })
-                                .bindPopup(`<b>${p.name}</b><br><small>${type.replace(/_/g,' ')}</small>`)
-                                .addTo(cluster);
-                        }
-                    });
-                    cluster.addTo(map);
-                    poiLayers[type] = cluster;
-                    el.classList.add('active');
-                });
-            }
+    Object.keys(poiConfig).forEach(type => {
+        const cfg = poiConfig[type];
+        if (poiCounts[type]) {
+            grouped[cfg.group].push({ type, ...cfg, count: poiCounts[type] });
         }
-    </script>
+    });
+
+    const container = document.getElementById('poi-groups');
+    container.innerHTML = '';
+
+    groupOrder.forEach(groupName => {
+        const items = grouped[groupName];
+        if (!items || items.length === 0) return;
+
+        const totalCount = items.reduce((s, i) => s + i.count, 0);
+
+        const groupDiv = document.createElement('div');
+        groupDiv.className = 'poi-group open';
+        groupDiv.dataset.group = groupName;
+
+        groupDiv.innerHTML = `
+            <div class="poi-group-header">
+                <div class="left">
+                    <i class="fa-solid fa-chevron-right arrow"></i>
+                    <span>${groupName}</span>
+                </div>
+                <span class="poi-group-count">${items.length}</span>
+            </div>
+            <div class="poi-group-body"></div>
+        `;
+
+        const body = groupDiv.querySelector('.poi-group-body');
+
+        items.forEach(item => {
+            const row = document.createElement('div');
+            row.className = 'poi-toggle' + (defaultOn.includes(item.type) ? ' active' : '');
+            row.dataset.type = item.type;
+            row.dataset.search = (item.label + ' ' + item.type).toLowerCase();
+            row.innerHTML = `
+                <div class="left">
+                    <div class="check"><i class="fa-solid fa-check"></i></div>
+                    <span>${item.emoji} ${item.label}</span>
+                </div>
+                <span class="count">${item.count}</span>
+            `;
+            row.addEventListener('click', () => toggleLayer(item.type, row));
+            body.appendChild(row);
+        });
+
+        groupDiv.querySelector('.poi-group-header').addEventListener('click', () => {
+            groupDiv.classList.toggle('open');
+        });
+
+        container.appendChild(groupDiv);
+    });
+
+    // Load default ON layers
+    defaultOn.forEach(type => {
+        const el = document.querySelector(`.poi-toggle[data-type="${type}"]`);
+        if (el) loadLayer(type);
+    });
+}
+
+buildPoiGroups();
+
+// ===== FLOOD ZONES =====
+fetch('/api/flood_zones').then(r => r.json()).then(data => {
+    const features = data.filter(f => f.geometry).map(f => ({
+        type: 'Feature', properties: { risk: f.risk_level },
+        geometry: JSON.parse(f.geometry)
+    }));
+    if (features.length > 0) {
+        L.geoJSON({ type: 'FeatureCollection', features }, {
+            style: (f) => ({
+                color: f.properties.risk === 'High' ? '#dc3545' : '#ffc107',
+                weight: 1, fillOpacity: 0.18
+            }),
+            renderer: L.canvas()
+        }).bindPopup(l => `⚠️ ${l.feature.properties.risk} Flood Risk`).addTo(map);
+    }
+});
+
+// ===== SEARCH =====
+document.getElementById('poi-search').addEventListener('input', function(e) {
+    const q = e.target.value.toLowerCase().trim();
+    document.querySelectorAll('.poi-toggle').forEach(el => {
+        const match = !q || el.dataset.search.includes(q);
+        el.style.display = match ? '' : 'none';
+    });
+    // Auto expand groups with matches
+    document.querySelectorAll('.poi-group').forEach(g => {
+        const visible = Array.from(g.querySelectorAll('.poi-toggle')).some(el => el.style.display !== 'none');
+        if (q && visible) g.classList.add('open');
+    });
+});
+
+// ===== MAP CLICK → LOCATION INFO =====
+let clickMarker = null;
+let clickCircle = null;
+
+map.on('click', function(e) {
+    const lat = e.latlng.lat;
+    const lon = e.latlng.lng;
+
+    if (clickMarker) map.removeLayer(clickMarker);
+    if (clickCircle) map.removeLayer(clickCircle);
+
+    clickMarker = L.marker([lat, lon], {
+        icon: L.divIcon({
+            html: '<div style="background:#1e3a5f;width:14px;height:14px;border-radius:50%;border:3px solid white;box-shadow:0 2px 6px rgba(0,0,0,0.4);"></div>',
+            iconSize: [14, 14], iconAnchor: [7, 7]
+        })
+    }).addTo(map);
+
+    clickCircle = L.circle([lat, lon], {
+        radius: 2000, color: '#1e3a5f',
+        fillColor: '#1e3a5f', fillOpacity: 0.05, weight: 1, dashArray: '4,4'
+    }).addTo(map);
+
+    document.getElementById('bp-title').textContent = 'Loading...';
+    document.getElementById('bp-content').innerHTML = '<p style="color:#6c757d;">Fetching data...</p>';
+    document.getElementById('bottom-panel').classList.add('show');
+
+    fetch(`/api/location_info?lat=${lat}&lon=${lon}`)
+        .then(r => r.json())
+        .then(d => {
+            const wardName = d.ward ? d.ward.ward_name : 'Unknown Ward';
+            document.getElementById('bp-title').textContent = '📍 ' + wardName;
+
+            const aqi = d.ward && d.ward.avg_aqi ? Math.round(d.ward.avg_aqi) : null;
+            const aqiClass = aqi < 100 ? 'good' : aqi < 200 ? 'moderate' : 'poor';
+            const floodClass = d.flood_zone === 'High' ? 'poor' : d.flood_zone === 'Medium' ? 'moderate' : 'good';
+
+            let html = '<div class="bp-grid">';
+            html += `<div class="bp-stat"><div class="lbl">Population</div><div class="val">${d.ward && d.ward.population ? parseInt(d.ward.population).toLocaleString() : 'N/A'}</div></div>`;
+            html += `<div class="bp-stat"><div class="lbl">Literacy</div><div class="val">${d.ward && d.ward.literacy ? d.ward.literacy + '%' : 'N/A'}</div></div>`;
+            html += `<div class="bp-stat"><div class="lbl">Avg AQI</div><div class="val ${aqiClass}">${aqi || 'N/A'}</div></div>`;
+            html += `<div class="bp-stat"><div class="lbl">Flood Risk</div><div class="val ${floodClass}">${d.flood_zone || 'None'}</div></div>`;
+            html += '</div>';
+
+            if (d.hospitals && d.hospitals.length) {
+                html += `<div class="bp-section"><div class="bp-section-title">🏥 Nearest Hospitals</div><div class="bp-items">`;
+                d.hospitals.forEach(h => html += `<div class="bp-item">${h.name} <span class="dist">${h.distance_m}m</span></div>`);
+                html += '</div></div>';
+            }
+
+            if (d.schools && d.schools.length) {
+                html += `<div class="bp-section"><div class="bp-section-title">🏫 Nearest Schools</div><div class="bp-items">`;
+                d.schools.forEach(s => html += `<div class="bp-item">${s.name} <span class="dist">${s.distance_m}m</span></div>`);
+                html += '</div></div>';
+            }
+
+            if (d.pharmacies && d.pharmacies.length) {
+                html += `<div class="bp-section"><div class="bp-section-title">💊 Nearest Pharmacies</div><div class="bp-items">`;
+                d.pharmacies.forEach(p => html += `<div class="bp-item">${p.name} <span class="dist">${p.distance_m}m</span></div>`);
+                html += '</div></div>';
+            }
+
+            document.getElementById('bp-content').innerHTML = html;
+        });
+});
+
+function closePanel() {
+    document.getElementById('bottom-panel').classList.remove('show');
+    if (clickMarker) map.removeLayer(clickMarker);
+    if (clickCircle) map.removeLayer(clickCircle);
+    clickMarker = null; clickCircle = null;
+}
+</script>
 </body>
 </html>
