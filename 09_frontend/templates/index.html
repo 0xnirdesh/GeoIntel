@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>GeoIntel — Delhi Spatial Intelligence</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css"/>
@@ -50,7 +51,7 @@
             padding: 0 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);
             position: relative; z-index: 1000;
         }
-        .topbar-left { display: flex; align-items: baseline; gap: 12px; }
+        .topbar-left { display: flex; align-items: center; gap: 12px; }
         .topbar h1 { font-size: 17px; font-weight: 600; letter-spacing: -0.3px; }
         .topbar .divider { color: #4a6f9a; }
         .topbar .tagline { font-size: 12px; color: #a8c0d8; font-weight: 400; }
@@ -58,6 +59,8 @@
         .topbar-right a { color: #a8c0d8; text-decoration: none; display: flex; align-items: center; gap: 5px; }
         .topbar-right a:hover { color: white; }
         .topbar .badge { background: #2d6a4f; padding: 2px 8px; border-radius: 3px; font-size: 11px; }
+
+        .mobile-menu-btn { display: none; }
 
         .theme-toggle {
             background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);
@@ -70,7 +73,7 @@
         .container { display: flex; height: calc(100vh - 48px); }
 
         .sidebar {
-            width: 300px; background: var(--bg-secondary); border-right: 1px solid var(--border-color);
+            width: 320px; background: var(--bg-secondary); border-right: 1px solid var(--border-color);
             display: flex; flex-direction: column; overflow: hidden;
             transition: background 0.3s, border 0.3s;
         }
@@ -98,6 +101,20 @@
             text-transform: uppercase; letter-spacing: 0.5px;
             padding-bottom: 6px; margin-bottom: 8px;
             border-bottom: 1px solid var(--border-light);
+            display: flex; align-items: center; justify-content: space-between;
+        }
+        .section-header .header-actions {
+            display: flex; gap: 4px;
+        }
+        .section-header .header-actions button {
+            font-size: 9px; padding: 2px 6px;
+            background: var(--bg-tertiary); color: var(--text-secondary);
+            border: 1px solid var(--border-color); border-radius: 3px;
+            cursor: pointer; text-transform: uppercase; letter-spacing: 0.3px;
+            font-weight: 600; font-family: inherit;
+        }
+        .section-header .header-actions button:hover {
+            background: var(--accent); color: white; border-color: var(--accent);
         }
 
         .poi-group { margin-bottom: 4px; }
@@ -113,6 +130,19 @@
             font-size: 9px; color: var(--text-muted); transition: transform 0.2s;
         }
         .poi-group.open .arrow { transform: rotate(90deg); }
+        .poi-group-header .right {
+            display: flex; align-items: center; gap: 4px;
+        }
+        .poi-group-header .group-btn {
+            font-size: 8px; padding: 2px 5px;
+            background: var(--bg-tertiary); color: var(--text-secondary);
+            border: 1px solid var(--border-color); border-radius: 3px;
+            cursor: pointer; font-weight: 600; font-family: inherit;
+            text-transform: uppercase; letter-spacing: 0.2px;
+        }
+        .poi-group-header .group-btn:hover {
+            background: var(--accent); color: white; border-color: var(--accent);
+        }
         .poi-group-body { display: none; padding: 4px 0 4px 8px; }
         .poi-group.open .poi-group-body { display: block; }
         .poi-group-count {
@@ -223,7 +253,7 @@
 
         .bottom-panel {
             background: var(--bg-secondary); border-top: 1px solid var(--border-color);
-            padding: 12px 20px; max-height: 260px; overflow-y: auto;
+            padding: 12px 20px; max-height: 280px; overflow-y: auto;
             display: none;
         }
         .bottom-panel.show { display: block; }
@@ -235,7 +265,21 @@
             margin-bottom: 10px; padding-bottom: 8px;
             border-bottom: 1px solid var(--border-light);
         }
-        .bp-title { font-size: 13px; font-weight: 600; color: var(--accent); }
+        .bp-title {
+            font-size: 13px; font-weight: 600; color: var(--accent);
+            display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+        }
+        .ward-badge {
+            background: var(--accent); color: white;
+            padding: 3px 10px; border-radius: 4px;
+            font-size: 11px; font-weight: 600;
+            letter-spacing: 0.3px;
+            display: inline-flex; align-items: center; gap: 5px;
+        }
+        .ward-name {
+            font-size: 12px; font-weight: 500;
+            color: var(--text-secondary);
+        }
         .bp-close { cursor: pointer; color: var(--text-muted); font-size: 14px; }
         .bp-close:hover { color: var(--text-primary); }
 
@@ -276,12 +320,159 @@
             box-shadow: 0 1px 4px rgba(0,0,0,0.2);
             font-size: 12px;
         }
+
+        /* ===== RESPONSIVE — TABLET & MOBILE ===== */
+
+        @media (max-width: 1024px) {
+            .sidebar { width: 260px; }
+            .topbar .tagline { display: none; }
+        }
+
+        @media (max-width: 768px) {
+            .topbar {
+                height: 44px;
+                padding: 0 12px;
+            }
+            .topbar h1 { font-size: 15px; }
+            .topbar .divider,
+            .topbar .tagline,
+            .topbar .badge { display: none; }
+            .theme-toggle span { display: none; }
+
+            .container { height: calc(100vh - 44px); }
+
+            .sidebar {
+                position: absolute;
+                left: -320px;
+                top: 44px;
+                height: calc(100vh - 44px);
+                z-index: 900;
+                transition: left 0.3s ease;
+                box-shadow: 2px 0 12px rgba(0,0,0,0.15);
+                width: 280px;
+            }
+            .sidebar.open { left: 0; }
+
+            .mobile-menu-btn {
+                display: flex !important;
+                align-items: center;
+                justify-content: center;
+                width: 32px;
+                height: 32px;
+                background: rgba(255,255,255,0.1);
+                border: 1px solid rgba(255,255,255,0.2);
+                color: white;
+                border-radius: 5px;
+                cursor: pointer;
+                font-size: 14px;
+            }
+
+            .map-area { width: 100%; }
+
+            .map-corner-controls {
+                top: 10px;
+                right: 10px;
+            }
+            .corner-btn {
+                width: 36px;
+                height: 36px;
+                font-size: 14px;
+            }
+
+            .radius-panel {
+                width: 240px;
+                padding: 12px;
+            }
+            .radius-presets {
+                grid-template-columns: repeat(3, 1fr);
+            }
+
+            .bottom-panel {
+                max-height: 50vh;
+                padding: 10px 14px;
+            }
+            .bp-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 8px;
+            }
+            .bp-stat .val { font-size: 14px; }
+            .bp-items { gap: 6px 12px; font-size: 11px; }
+        }
+
+        @media (max-width: 480px) {
+            html, body { font-size: 12px; }
+
+            .topbar { padding: 0 10px; }
+            .topbar h1 { font-size: 14px; }
+
+            .sidebar { width: 85vw; left: -85vw; }
+            .sidebar.open { left: 0; }
+
+            .section-header { font-size: 10px; }
+            .poi-toggle { font-size: 11px; padding: 6px; }
+
+            .map-corner-controls {
+                top: 8px;
+                right: 8px;
+                gap: 6px;
+            }
+            .corner-btn {
+                width: 34px;
+                height: 34px;
+                font-size: 13px;
+            }
+
+            .radius-panel {
+                width: calc(100vw - 60px);
+                max-width: 280px;
+            }
+            .radius-presets {
+                grid-template-columns: repeat(3, 1fr);
+                gap: 3px;
+            }
+            .radius-presets button { font-size: 10px; padding: 5px 2px; }
+
+            .bottom-panel { max-height: 55vh; padding: 8px 12px; }
+            .bp-header { margin-bottom: 8px; padding-bottom: 6px; }
+            .bp-title { font-size: 12px; }
+            .ward-badge { font-size: 10px; padding: 2px 8px; }
+            .ward-name { font-size: 11px; }
+
+            .bp-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 8px;
+                margin-bottom: 8px;
+            }
+            .bp-stat .lbl { font-size: 9px; }
+            .bp-stat .val { font-size: 13px; }
+
+            .bp-section-title { font-size: 9px; }
+            .bp-items { gap: 4px 10px; font-size: 10px; }
+        }
+
+        @media (hover: none) {
+            .poi-toggle,
+            .poi-group-header,
+            .corner-btn,
+            .theme-toggle,
+            .radius-presets button {
+                -webkit-tap-highlight-color: transparent;
+                min-height: 36px;
+            }
+            .poi-toggle .check {
+                width: 16px;
+                height: 16px;
+            }
+        }
     </style>
 </head>
 <body>
 
 <div class="topbar">
     <div class="topbar-left">
+        <button class="mobile-menu-btn" id="mobile-menu-btn">
+            <i class="fa-solid fa-bars"></i>
+        </button>
         <h1>GeoIntel</h1>
         <span class="divider">·</span>
         <span class="tagline">Delhi Spatial Intelligence System</span>
@@ -299,7 +490,7 @@
 </div>
 
 <div class="container">
-    <div class="sidebar">
+    <div class="sidebar" id="sidebar">
         <div class="sidebar-scroll">
             <div class="search-wrap">
                 <i class="fa-solid fa-magnifying-glass"></i>
@@ -307,7 +498,13 @@
             </div>
 
             <div class="section">
-                <div class="section-header">POI Layers</div>
+                <div class="section-header">
+                    <span>POI Layers</span>
+                    <div class="header-actions">
+                        <button id="select-all-btn">All ON</button>
+                        <button id="deselect-all-btn">All OFF</button>
+                    </div>
+                </div>
                 <div id="poi-groups"></div>
             </div>
 
@@ -521,6 +718,30 @@ function toggleLayer(type, el) {
     if (lastClick) refreshLocationInfo();
 }
 
+// ===== SELECT ALL / DESELECT ALL =====
+document.getElementById('select-all-btn').addEventListener('click', () => {
+    document.querySelectorAll('.poi-toggle').forEach(el => {
+        if (el.style.display === 'none') return;
+        const type = el.dataset.type;
+        if (!activeLayers[type]) {
+            el.classList.add('active');
+            loadLayer(type);
+        }
+    });
+    setTimeout(() => { if (lastClick) refreshLocationInfo(); }, 500);
+});
+
+document.getElementById('deselect-all-btn').addEventListener('click', () => {
+    document.querySelectorAll('.poi-toggle').forEach(el => {
+        const type = el.dataset.type;
+        if (activeLayers[type]) {
+            removeLayer(type);
+            el.classList.remove('active');
+        }
+    });
+    setTimeout(() => { if (lastClick) refreshLocationInfo(); }, 200);
+});
+
 // ===== BUILD POI ACCORDION =====
 let poiCounts = {};
 
@@ -553,6 +774,7 @@ async function buildPoiGroups() {
 
         const groupDiv = document.createElement('div');
         groupDiv.className = 'poi-group open';
+        groupDiv.dataset.group = groupName;
 
         groupDiv.innerHTML = `
             <div class="poi-group-header">
@@ -560,7 +782,11 @@ async function buildPoiGroups() {
                     <i class="fa-solid fa-chevron-right arrow"></i>
                     <span>${groupName}</span>
                 </div>
-                <span class="poi-group-count">${items.length}</span>
+                <div class="right">
+                    <button class="group-btn" data-action="all">All</button>
+                    <button class="group-btn" data-action="none">None</button>
+                    <span class="poi-group-count">${items.length}</span>
+                </div>
             </div>
             <div class="poi-group-body"></div>
         `;
@@ -579,12 +805,39 @@ async function buildPoiGroups() {
                 </div>
                 <span class="count">${item.count}</span>
             `;
-            row.addEventListener('click', () => toggleLayer(item.type, row));
+            row.addEventListener('click', (e) => {
+                e.stopPropagation();
+                toggleLayer(item.type, row);
+            });
             body.appendChild(row);
         });
 
-        groupDiv.querySelector('.poi-group-header').addEventListener('click', () => {
+        groupDiv.querySelector('.poi-group-header .left').addEventListener('click', () => {
             groupDiv.classList.toggle('open');
+        });
+
+        groupDiv.querySelector('[data-action="all"]').addEventListener('click', (e) => {
+            e.stopPropagation();
+            groupDiv.querySelectorAll('.poi-toggle').forEach(el => {
+                const type = el.dataset.type;
+                if (!activeLayers[type]) {
+                    el.classList.add('active');
+                    loadLayer(type);
+                }
+            });
+            setTimeout(() => { if (lastClick) refreshLocationInfo(); }, 500);
+        });
+
+        groupDiv.querySelector('[data-action="none"]').addEventListener('click', (e) => {
+            e.stopPropagation();
+            groupDiv.querySelectorAll('.poi-toggle').forEach(el => {
+                const type = el.dataset.type;
+                if (activeLayers[type]) {
+                    removeLayer(type);
+                    el.classList.remove('active');
+                }
+            });
+            setTimeout(() => { if (lastClick) refreshLocationInfo(); }, 200);
         });
 
         container.appendChild(groupDiv);
@@ -694,7 +947,7 @@ function refreshLocationInfo() {
 
     const { lat, lon } = lastClick;
 
-    document.getElementById('bp-title').textContent = 'Loading...';
+    document.getElementById('bp-title').innerHTML = '<span style="color:var(--text-secondary);">Loading...</span>';
     document.getElementById('bp-content').innerHTML = '<p style="color:var(--text-secondary);">Fetching data...</p>';
     document.getElementById('bottom-panel').classList.add('show');
 
@@ -704,8 +957,20 @@ function refreshLocationInfo() {
     fetch(`/api/location_info?lat=${lat}&lon=${lon}&types=${typesParam}&radius=${currentRadius}`)
         .then(r => r.json())
         .then(d => {
-            const wardName = d.ward ? d.ward.ward_name : 'Unknown Ward';
-            document.getElementById('bp-title').textContent = '📍 ' + wardName;
+            let titleHtml = '';
+            if (d.ward) {
+                const wardNo = d.ward.ward_no ? d.ward.ward_no : '—';
+                const wardName = d.ward.ward_name || 'Unknown';
+                titleHtml = `
+                    <span class="ward-badge">
+                        <i class="fa-solid fa-location-dot"></i> Ward No. ${wardNo}
+                    </span>
+                    <span class="ward-name">${wardName}</span>
+                `;
+            } else {
+                titleHtml = '<span style="color:var(--text-secondary);">Outside Delhi / Unknown Ward</span>';
+            }
+            document.getElementById('bp-title').innerHTML = titleHtml;
 
             const aqi = d.ward && d.ward.avg_aqi ? Math.round(d.ward.avg_aqi) : null;
             const aqiClass = aqi < 100 ? 'good' : aqi < 200 ? 'moderate' : 'poor';
@@ -741,6 +1006,30 @@ function closePanel() {
     if (clickCircle) map.removeLayer(clickCircle);
     clickMarker = null; clickCircle = null;
     lastClick = null;
+}
+
+// ===== MOBILE MENU TOGGLE =====
+const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+const sidebar = document.querySelector('.sidebar');
+
+if (mobileMenuBtn && sidebar) {
+    mobileMenuBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        sidebar.classList.toggle('open');
+    });
+
+    map.on('click', () => {
+        if (window.innerWidth <= 768) sidebar.classList.remove('open');
+    });
+
+    document.addEventListener('click', (e) => {
+        if (window.innerWidth <= 768 &&
+            sidebar.classList.contains('open') &&
+            !sidebar.contains(e.target) &&
+            !mobileMenuBtn.contains(e.target)) {
+            sidebar.classList.remove('open');
+        }
+    });
 }
 </script>
 </body>

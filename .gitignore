@@ -13,3 +13,10 @@ __pycache__/
 
 # Logs
 *.log
+venv/
+__pycache__/
+*.pyc
+.env
+*.osm.pbf
+03_data/raw/*.pbf
+.DS_Store

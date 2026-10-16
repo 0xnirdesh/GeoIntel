@@ -1,12 +1,18 @@
 from flask import Flask, render_template, jsonify, request
 import psycopg2
+import os
 from psycopg2.extras import RealDictCursor
 
 app = Flask(__name__)
 
-def get_db():
-    return psycopg2.connect(dbname="geointel", user="thakursahab", host="localhost")
 
+
+def get_db():
+    db_url = os.environ.get('DATABASE_URL')
+    if db_url:
+        return psycopg2.connect(db_url)
+    else:
+        return psycopg2.connect(dbname="geointel", user="thakursahab", host="localhost")
 @app.route('/')
 def index():
     return render_template('index.html')
@@ -86,8 +92,9 @@ def location_info():
     conn = get_db()
     cur = conn.cursor(cursor_factory=RealDictCursor)
 
+    # Ward info — with ward_no
     cur.execute("""
-        SELECT w.name AS ward_name, wcs.population, wcs.literacy, wcs.avg_aqi
+        SELECT w.name AS ward_name, w.ward_no, wcs.population, wcs.literacy, wcs.avg_aqi
         FROM wards w LEFT JOIN ward_complete_stats wcs ON w.ward_id = wcs.ward_id
         WHERE ST_Within(ST_SetSRID(ST_MakePoint(%s, %s), 4326), w.geom) LIMIT 1
     """, (lon, lat))
@@ -158,4 +165,5 @@ def location_info():
     })
 
 if __name__ == '__main__':
-    app.run(debug=True, port=5001)
+    port = int(os.environ.get('PORT', 5001))
+    app.run(debug=False, host='0.0.0.0', port=port)
