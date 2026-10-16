@@ -1,4 +1,5 @@
 # Large data files (not for git)
+venv/
 *.osm.pbf
 *.osm
 03_data/raw/*.pbf
