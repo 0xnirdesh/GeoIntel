@@ -20,4 +20,5 @@ __pycache__/
 .env
 *.osm.pbf
 03_data/raw/*.pbf
-.DS_Store
+.DS_Storegeointel_clean.sql
+restore_log.txt

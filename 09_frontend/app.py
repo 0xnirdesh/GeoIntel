@@ -92,7 +92,7 @@ def location_info():
     conn = get_db()
     cur = conn.cursor(cursor_factory=RealDictCursor)
 
-    # Ward info — with ward_no
+    # 1. Ward info
     cur.execute("""
         SELECT w.name AS ward_name, w.ward_no, wcs.population, wcs.literacy, wcs.avg_aqi
         FROM wards w LEFT JOIN ward_complete_stats wcs ON w.ward_id = wcs.ward_id
@@ -100,6 +100,7 @@ def location_info():
     """, (lon, lat))
     ward = cur.fetchone()
 
+    # 2. Flood zone
     cur.execute("""
         SELECT risk_level FROM flood_zones
         WHERE ST_Within(ST_SetSRID(ST_MakePoint(%s, %s), 4326), geom) LIMIT 1
@@ -125,36 +126,53 @@ def location_info():
 
     if active_types:
         types_list = [t.strip() for t in active_types.split(',') if t.strip()]
-        for ptype in types_list:
-            if ptype == 'hospital':
-                cur.execute("""
-                    SELECT name, ROUND(ST_Distance(geom::geography, ST_SetSRID(ST_MakePoint(%s, %s), 4326)::geography)::numeric, 1) AS distance_m
-                    FROM hospitals 
-                    WHERE ST_DWithin(geom::geography, ST_SetSRID(ST_MakePoint(%s, %s), 4326)::geography, %s)
-                    ORDER BY geom <-> ST_SetSRID(ST_MakePoint(%s, %s), 4326) LIMIT 5
-                """, (lon, lat, lon, lat, radius, lon, lat))
-            elif ptype == 'school':
-                cur.execute("""
-                    SELECT name, ROUND(ST_Distance(geom::geography, ST_SetSRID(ST_MakePoint(%s, %s), 4326)::geography)::numeric, 1) AS distance_m
-                    FROM schools 
-                    WHERE ST_DWithin(geom::geography, ST_SetSRID(ST_MakePoint(%s, %s), 4326)::geography, %s)
-                    ORDER BY geom <-> ST_SetSRID(ST_MakePoint(%s, %s), 4326) LIMIT 5
-                """, (lon, lat, lon, lat, radius, lon, lat))
-            else:
-                cur.execute("""
-                    SELECT name, ROUND(ST_Distance(geom::geography, ST_SetSRID(ST_MakePoint(%s, %s), 4326)::geography)::numeric, 1) AS distance_m
-                    FROM pois WHERE poi_type = %s 
-                    AND ST_DWithin(geom::geography, ST_SetSRID(ST_MakePoint(%s, %s), 4326)::geography, %s)
-                    ORDER BY geom <-> ST_SetSRID(ST_MakePoint(%s, %s), 4326) LIMIT 5
-                """, (lon, lat, ptype, lon, lat, radius, lon, lat))
-
+        
+        # Hospital Query
+        if 'hospital' in types_list:
+            cur.execute("""
+                SELECT name, ROUND(ST_Distance(geom::geography, ST_SetSRID(ST_MakePoint(%s, %s), 4326)::geography)::numeric, 1) AS distance_m
+                FROM hospitals 
+                WHERE ST_DWithin(geom::geography, ST_SetSRID(ST_MakePoint(%s, %s), 4326)::geography, %s)
+                ORDER BY geom <-> ST_SetSRID(ST_MakePoint(%s, %s), 4326) LIMIT 5
+            """, (lon, lat, lon, lat, radius, lon, lat))
             rows = cur.fetchall()
-            if rows:
-                nearest[ptype] = {
-                    'label': type_labels.get(ptype, ptype.replace('_', ' ').title()),
-                    'emoji': type_emoji.get(ptype, '📍'),
-                    'items': rows
-                }
+            if rows: nearest['hospital'] = {'label': type_labels['hospital'], 'emoji': type_emoji['hospital'], 'items': rows}
+
+        # School Query
+        if 'school' in types_list:
+            cur.execute("""
+                SELECT name, ROUND(ST_Distance(geom::geography, ST_SetSRID(ST_MakePoint(%s, %s), 4326)::geography)::numeric, 1) AS distance_m
+                FROM schools 
+                WHERE ST_DWithin(geom::geography, ST_SetSRID(ST_MakePoint(%s, %s), 4326)::geography, %s)
+                ORDER BY geom <-> ST_SetSRID(ST_MakePoint(%s, %s), 4326) LIMIT 5
+            """, (lon, lat, lon, lat, radius, lon, lat))
+            rows = cur.fetchall()
+            if rows: nearest['school'] = {'label': type_labels['school'], 'emoji': type_emoji['school'], 'items': rows}
+
+        # Baaki saare POIs ek saath ek hi query me (MASSIVE SPEED BOOST)
+        other_pois = [t for t in types_list if t not in ('hospital', 'school')]
+        if other_pois:
+            cur.execute("""
+                WITH nearby AS (
+                    SELECT poi_type, name, 
+                           ROUND(ST_Distance(geom::geography, ST_SetSRID(ST_MakePoint(%s, %s), 4326)::geography)::numeric, 1) AS distance_m
+                    FROM pois 
+                    WHERE poi_type = ANY(%s)
+                    AND ST_DWithin(geom::geography, ST_SetSRID(ST_MakePoint(%s, %s), 4326)::geography, %s)
+                ),
+                ranked AS (
+                    SELECT poi_type, name, distance_m,
+                           ROW_NUMBER() OVER(PARTITION BY poi_type ORDER BY distance_m ASC) as rn
+                    FROM nearby
+                )
+                SELECT poi_type, name, distance_m FROM ranked WHERE rn <= 5
+            """, (lon, lat, other_pois, lon, lat, radius))
+            
+            for row in cur.fetchall():
+                ptype = row['poi_type']
+                if ptype not in nearest:
+                    nearest[ptype] = {'label': type_labels.get(ptype, ptype), 'emoji': type_emoji.get(ptype, '📍'), 'items': []}
+                nearest[ptype]['items'].append({'name': row['name'], 'distance_m': row['distance_m']})
 
     conn.close()
     return jsonify({
